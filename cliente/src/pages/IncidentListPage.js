@@ -1,0 +1,387 @@
+// src/pages/IncidentListPage.js
+import React, { useState, useEffect, useCallback, useRef } from 'react'; // Asegúrate que useRef esté importado
+import { Link as RouterLink } from 'react-router-dom';
+import Container from '@mui/material/Container';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Button from '@mui/material/Button';
+import Fade from '@mui/material/Fade';
+import Grid from '@mui/material/Grid';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+
+// Importa el formulario de edición y los datos mock
+import EditIncidentForm from '../components/EditIncidentForm';
+import { mockIncidentsData } from '../data/mockIncidents'; // Ajusta la ruta si es necesario
+
+// Definición de columnas filtrables
+const filterableColumns = [
+  { key: 'all', label: 'Todas las Columnas' },
+  { key: 'id', label: 'ID Incidente' },
+  { key: 'robotId', label: 'Robot Afectado' },
+  { key: 'location', label: 'Ubicación' },
+  { key: 'type', label: 'Tipo' },
+  { key: 'status', label: 'Estado' },
+  { key: 'gravity', label: 'Gravedad' },
+  { key: 'incidentTimestamp', label: 'Fecha y Hora' },
+  { key: 'cause', label: 'Causa' },
+];
+
+// Función para formatear fecha/hora
+const formatDateTime = (dateTimeString) => {
+  if (!dateTimeString) return 'N/A';
+  try {
+    const date = new Date(dateTimeString);
+    if (isNaN(date.getTime())) {
+        return 'Fecha inválida';
+    }
+    return date.toLocaleString('es-CL'); // Formato Chileno
+  } catch (error) {
+    console.error("Error formatting date:", error);
+    return 'Fecha inválida';
+  }
+};
+
+// Componente de Transición para Dialogs
+const Transition = React.forwardRef(function Transition(props, ref) {
+    return <Fade ref={ref} {...props} />;
+  });
+
+// --- Componente Principal ---
+function IncidentListPage() {
+  // --- Estados ---
+  const [incidents, setIncidents] = useState([]); // Lista completa
+  const [filteredIncidents, setFilteredIncidents] = useState([]); // Lista para mostrar
+  const [filterText, setFilterText] = useState(''); // Texto de búsqueda
+  const [filterColumn, setFilterColumn] = useState('all'); // Columna seleccionada
+  const [selectedIncident, setSelectedIncident] = useState(null); // Incidente para modal
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false); // Visibilidad modal detalles
+  const [editModalOpen, setEditModalOpen] = useState(false); // Visibilidad modal edición
+  const [isSaving, setIsSaving] = useState(false); // Estado de carga al guardar
+  const [snackbarOpen, setSnackbarOpen] = useState(false); // Visibilidad Snackbar
+  const [snackbarMessage, setSnackbarMessage] = useState(''); // Mensaje Snackbar
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // Tipo Snackbar
+  const editFormRef = useRef(); // Ref para el form de edición
+
+  // --- Efectos ---
+
+  // Carga inicial de datos (simulada)
+  useEffect(() => {
+    setTimeout(() => {
+        setIncidents(mockIncidentsData);
+        // setFilteredIncidents(mockIncidentsData); // No es necesario aquí, el siguiente useEffect lo hará
+    }, 200);
+  }, []); // Ejecutar solo al montar
+
+  // Efecto para aplicar filtros
+  useEffect(() => {
+    const lowerCaseFilter = filterText.toLowerCase().trim();
+
+    // Si no hay texto de filtro, muestra todos los incidentes
+    if (lowerCaseFilter === '') {
+        setFilteredIncidents(incidents);
+        return;
+    }
+
+    const filtered = incidents.filter((incident) => {
+        if (filterColumn === 'all') {
+            // Busca en todas las columnas definidas como filtrables
+            return filterableColumns.some(col => {
+                if (col.key === 'all') return false; // No buscar en la opción 'all'
+                const value = incident[col.key];
+                // Manejo especial para la fecha/hora
+                if (col.key === 'incidentTimestamp') {
+                    return formatDateTime(value).toLowerCase().includes(lowerCaseFilter);
+                }
+                // Comparación general (asegurándose que el valor exista y convirtiendo a string)
+                return value != null && String(value).toLowerCase().includes(lowerCaseFilter);
+            });
+        } else {
+            // Busca solo en la columna seleccionada
+            const value = incident[filterColumn];
+             // Manejo especial para la fecha/hora
+            if (filterColumn === 'incidentTimestamp') {
+                return formatDateTime(value).toLowerCase().includes(lowerCaseFilter);
+            }
+            // Comparación general
+            return value != null && String(value).toLowerCase().includes(lowerCaseFilter);
+        }
+    });
+    setFilteredIncidents(filtered);
+  }, [filterText, filterColumn, incidents]); // Dependencias: texto, columna, lista base
+
+
+  // --- Manejadores ---
+
+  // Manejador para Snackbar
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbarOpen(false);
+  };
+
+  // Manejadores para filtros
+  const handleFilterTextChange = (event) => {
+    setFilterText(event.target.value);
+  };
+  const handleFilterColumnChange = (event) => {
+    setFilterColumn(event.target.value);
+  };
+
+  // Manejadores para Modales (Detalles y Edición)
+  const handleViewDetails = useCallback((id) => {
+    const incident = incidents.find(inc => String(inc.id) === String(id)); // Comparación segura
+    if (incident) {
+      setSelectedIncident(incident);
+      setDetailsModalOpen(true);
+    }
+  }, [incidents]);
+
+  const handleEdit = useCallback((id) => {
+    const incident = incidents.find(inc => String(inc.id) === String(id)); // Comparación segura
+     if (incident) {
+      setSelectedIncident({ ...incident }); // Pasa una copia
+      setEditModalOpen(true);
+    }
+  }, [incidents]);
+
+  const handleCloseDetailsModal = () => {
+    setDetailsModalOpen(false);
+    setTimeout(() => setSelectedIncident(null), 150); // Limpia después de animación
+  };
+
+  const handleCloseEditModal = () => {
+    if (isSaving) return;
+    setEditModalOpen(false);
+    setTimeout(() => setSelectedIncident(null), 150); // Limpia después de animación
+  };
+
+  // Manejador para guardar cambios (simulado)
+  const handleSaveChanges = async (editedData) => {
+    setIsSaving(true);
+    console.log("Guardando cambios (simulado):", editedData);
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        setIncidents(prevIncidents =>
+            prevIncidents.map(inc =>
+                String(inc.id) === String(editedData.id) ? { ...inc, ...editedData } : inc
+            )
+        );
+        showSnackbar('Incidente actualizado correctamente.', 'success');
+        handleCloseEditModal();
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        showSnackbar(error.message || 'No se pudo actualizar el incidente.', 'error');
+    } finally {
+        setIsSaving(false);
+    }
+  };
+
+  // Manejador para disparar submit del form de edición desde DialogActions
+  const handleTriggerEditFormSubmit = () => {
+      if (editFormRef.current) {
+          // Busca el formulario dentro del ref y dispara submit
+           const formElement = editFormRef.current.querySelector('form') || editFormRef.current;
+            if (formElement && typeof formElement.requestSubmit === 'function') {
+                 formElement.requestSubmit(); // Método moderno preferido
+            } else if (formElement && typeof formElement.submit === 'function'){
+                 formElement.submit(); // Fallback
+            } else {
+                 // Fallback muy básico si los anteriores fallan
+                 editFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+            }
+      }
+  };
+
+  // Manejador para eliminar (placeholder)
+  const handleDelete = (id) => {
+    console.log("Eliminar incidente:", id);
+    // Lógica futura: Confirmación -> API Delete -> Actualizar estado 'incidents' -> Snackbar
+    if (window.confirm(`¿Está seguro de que desea eliminar el incidente ${id}? Esta acción no se puede deshacer.`)) {
+        console.log("Confirmado - Llamando a API (simulado)");
+        // Simular llamada a API y actualización
+        setTimeout(() => {
+            setIncidents(prevIncidents => prevIncidents.filter(inc => String(inc.id) !== String(id)));
+            showSnackbar('Incidente eliminado (simulación).', 'warning');
+        }, 500);
+    } else {
+        console.log("Eliminación cancelada");
+    }
+  };
+
+
+  // --- Renderizado ---
+  return (
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Lista de Incidentes
+      </Typography>
+
+      {/* Controles de Filtro y Acción */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+         <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+             {/* Select Columna */}
+             <FormControl sx={{ minWidth: 200 }} size="small">
+                <InputLabel id="filter-column-select-label">Filtrar por Columna</InputLabel>
+                <Select
+                    labelId="filter-column-select-label"
+                    id="filter-column-select"
+                    value={filterColumn}
+                    label="Filtrar por Columna"
+                    onChange={handleFilterColumnChange} // Asignado correctamente
+                >
+                    {filterableColumns.map((col) => (
+                        <MenuItem key={col.key} value={col.key}>
+                            {col.label}
+                        </MenuItem>
+                    ))}
+                </Select>
+             </FormControl>
+
+            {/* Barra de búsqueda */}
+             <TextField
+                label="Texto a Buscar..."
+                variant="outlined"
+                size="small"
+                value={filterText}
+                onChange={handleFilterTextChange} // Asignado correctamente
+                sx={{ flexGrow: 1, minWidth: '250px' }}
+             />
+
+            {/* Botón Añadir Incidente */}
+            <Tooltip title="Registrar Nuevo Incidente">
+                <IconButton color="primary" component={RouterLink} to="/crear-incidente" sx={{ ml: 'auto' }}>
+                    <AddCircleOutlineIcon fontSize="large" />
+                </IconButton>
+            </Tooltip>
+         </Box>
+      </Paper>
+
+      {/* Tabla de Incidentes */}
+      <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+        <TableContainer sx={{ maxHeight: 600 }}>
+          <Table stickyHeader aria-label="tabla de incidentes">
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold' }}>ID Incidente</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Robot Afectado</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Fecha y Hora</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Ubicación</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Estado</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Gravedad</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredIncidents.length > 0 ? (
+                filteredIncidents.map((incident) => (
+                  <TableRow hover key={incident.id}>
+                    <TableCell>{incident.id}</TableCell>
+                    <TableCell>{incident.robotId}</TableCell>
+                    <TableCell>{formatDateTime(incident.incidentTimestamp)}</TableCell>
+                    <TableCell>{incident.location}</TableCell>
+                    <TableCell>{incident.type}</TableCell>
+                    <TableCell>{incident.status}</TableCell>
+                    <TableCell>{incident.gravity}</TableCell>
+                    <TableCell align="center">
+                       <Tooltip title="Ver Detalles"><IconButton size="small" onClick={() => handleViewDetails(incident.id)}><VisibilityIcon fontSize="inherit" /></IconButton></Tooltip>
+                       <Tooltip title="Editar"><IconButton size="small" onClick={() => handleEdit(incident.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
+                       <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    {incidents.length === 0 ? "Cargando datos..." : "No se encontraron incidentes que coincidan con los filtros."}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
+
+      {/* --- MODAL VER DETALLES --- */}
+      <Dialog open={detailsModalOpen} onClose={handleCloseDetailsModal} TransitionComponent={Transition} fullWidth maxWidth="sm">
+        <DialogTitle>Detalles del Incidente: {selectedIncident?.id}</DialogTitle>
+        <DialogContent dividers>
+            {selectedIncident ? (
+                <Grid container spacing={1}>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Robot:</Typography><Typography>{selectedIncident.robotId}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Fecha/Hora:</Typography><Typography>{formatDateTime(selectedIncident.incidentTimestamp)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Ubicación:</Typography><Typography>{selectedIncident.location}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Tipo:</Typography><Typography>{selectedIncident.type}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Estado:</Typography><Typography>{selectedIncident.status}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Gravedad:</Typography><Typography>{selectedIncident.gravity}</Typography></Grid>
+                    <Grid item xs={12}><Typography variant="body2" color="text.secondary">Causa/Descripción:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || 'N/A'}</Typography></Grid>
+                </Grid>
+            ) : ( <DialogContentText>Cargando detalles...</DialogContentText> )}
+        </DialogContent>
+        <DialogActions> <Button onClick={handleCloseDetailsModal}>Cerrar</Button> </DialogActions>
+      </Dialog>
+
+      {/* --- MODAL EDITAR INCIDENTE --- */}
+      <Dialog open={editModalOpen} onClose={handleCloseEditModal} TransitionComponent={Transition} fullWidth maxWidth="md">
+          <DialogTitle>Editar Incidente: {selectedIncident?.id}</DialogTitle>
+          <DialogContent dividers>
+              {selectedIncident ? (
+                   <Box ref={editFormRef}> {/* Aplicar la ref al Box contenedor */}
+                      <EditIncidentForm
+                          initialData={selectedIncident}
+                          onSubmit={handleSaveChanges}
+                          onCancel={handleCloseEditModal} // Aunque el botón esté fuera, puede ser útil para el componente interno
+                          isLoading={isSaving}
+                       />
+                   </Box>
+              ) : ( <DialogContentText>Cargando formulario...</DialogContentText> )}
+          </DialogContent>
+          <DialogActions>
+              <Button onClick={handleCloseEditModal} disabled={isSaving}>Cancelar</Button>
+              <Button onClick={handleTriggerEditFormSubmit} variant="contained" disabled={isSaving} startIcon={isSaving ? <CircularProgress size={20} color="inherit"/> : null}>
+                  {isSaving ? 'Guardando...' : 'Guardar Cambios'}
+              </Button>
+          </DialogActions>
+      </Dialog>
+
+      {/* --- Snackbar para Notificaciones --- */}
+      <Snackbar open={snackbarOpen} autoHideDuration={5000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+          <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }} variant="filled">
+              {snackbarMessage}
+          </Alert>
+      </Snackbar>
+
+    </Container>
+  );
+}
+
+export default IncidentListPage;
