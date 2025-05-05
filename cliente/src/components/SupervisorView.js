@@ -134,6 +134,23 @@ function SupervisorView() {
     }
   };
 
+  const handleSignIncident = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:3001/api/incidentes/${id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: 'FIRMADO' }),
+      });
+  
+      if (!res.ok) throw new Error('No se pudo firmar');
+  
+      fetchIncidentes();
+    } catch (err) {
+      console.error(err);
+      setError('Error al firmar el incidente');
+    }
+  };
+
   const filteredIncidentes = incidentes.filter((incidente) => {
     return (
       (!filters.fecha || incidente.fecha.startsWith(filters.fecha)) &&
@@ -150,11 +167,11 @@ function SupervisorView() {
   return (
     <div>
       <h2>Vista del Supervisor</h2>
-
+  
       <button onClick={handleAddIncident} style={{ marginBottom: '10px' }}>
         Añadir Incidente
       </button>
-
+  
       <h3>Filtros</h3>
       <input placeholder="Fecha" type="date" onChange={e => setFilters({ ...filters, fecha: e.target.value })} />
       <input placeholder="Ubicación" onChange={e => setFilters({ ...filters, ubicacion: e.target.value })} />
@@ -164,7 +181,7 @@ function SupervisorView() {
       <input placeholder="Estado" onChange={e => setFilters({ ...filters, estado: e.target.value })} />
       <input placeholder="Robot" onChange={e => setFilters({ ...filters, robots: e.target.value })} />
       <input placeholder="Técnico" onChange={e => setFilters({ ...filters, tecnicos: e.target.value })} />
-
+  
       {formVisible && (
         <form onSubmit={handleSubmit} style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '10px' }}>
           <h3>{formData.id ? 'Editar Incidente' : 'Nuevo Incidente'}</h3>
@@ -177,8 +194,8 @@ function SupervisorView() {
             <select name="estado" value={formData.estado} onChange={handleChange}>
               <option value="CREADO">CREADO</option>
               <option value="EN PROCESO">EN PROCESO</option>
-              <option value="POR FIRMAR">EN PROCESO</option>
               <option value="RESUELTO">RESUELTO</option>
+              <option value="FIRMADO">FIRMADO</option>
             </select>
           </label><br />
           <label>Robots (separados por coma): <input name="robots" value={formData.robots} onChange={handleChange} /></label><br />
@@ -187,9 +204,9 @@ function SupervisorView() {
           <button type="button" onClick={() => setFormVisible(false)} style={{ marginLeft: '10px' }}>Cancelar</button>
         </form>
       )}
-
+  
       {error && <p style={{ color: 'red' }}>{error}</p>}
-
+  
       <table border="1" cellPadding="10">
         <thead>
           <tr>
@@ -206,25 +223,24 @@ function SupervisorView() {
           </tr>
         </thead>
         <tbody>
-            {filteredIncidentes.map((inc) => (
-                <tr key={inc.id}>
-                <td>{inc.id}</td>
-                <td>{new Date(inc.fecha).toLocaleDateString()}</td>
-                <td>{inc.ubicacion}</td>
-                <td>{inc.tipo}</td>
-                <td>{inc.causa}</td>
-                <td>{inc.gravedad}</td>
-                <td>{inc.estado}</td>
-                <td>{(inc.robots || []).join(', ')}</td>
-                <td>{(inc.tecnicos || []).join(', ')}</td>
-                <td>
-                    <button onClick={() => handleEditIncident(inc)}>Editar</button>
-                    <button onClick={() => handleDeleteIncident(inc.id)} style={{ marginLeft: '10px', color: 'red' }}>
-                    Eliminar
-                    </button>
-                </td>
-                </tr>
-            ))}
+          {filteredIncidentes.map((inc) => (
+            <tr key={inc.id}>
+              <td>{inc.id}</td>
+              <td>{new Date(inc.fecha).toLocaleDateString()}</td>
+              <td>{inc.ubicacion}</td>
+              <td>{inc.tipo}</td>
+              <td>{inc.causa}</td>
+              <td>{inc.gravedad}</td>
+              <td>{inc.estado}</td>
+              <td>{(inc.robots || []).join(', ')}</td>
+              <td>{(inc.tecnicos || []).join(', ')}</td>
+              <td>
+                <button onClick={() => handleEditIncident(inc)}>Editar</button>
+                <button onClick={() => handleDeleteIncident(inc.id)} style={{ marginLeft: '5px' }}>Eliminar</button>
+                <button onClick={() => handleSignIncident(inc.id)} style={{ marginLeft: '5px' }}>Firmar</button>
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

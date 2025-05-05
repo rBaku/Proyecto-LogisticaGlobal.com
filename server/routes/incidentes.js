@@ -197,4 +197,22 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Cambiar solo el estado de un incidente
+router.patch('/:id/estado', async (req, res) => {
+  const { id } = req.params;
+  const { estado } = req.body;
+
+  if (!estado) {
+    return res.status(400).json({ error: 'El estado es obligatorio' });
+  }
+
+  try {
+    await pool.query('UPDATE incidentes SET estado = $1 WHERE id = $2', [estado, id]);
+    res.json({ mensaje: 'Estado actualizado' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar el estado' });
+  }
+});
+
 module.exports = router;
