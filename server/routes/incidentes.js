@@ -2,6 +2,122 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
+// Crear un nuevo incidente
+router.post('/', async (req, res) => {
+  const {
+    robot_id,
+    incident_timestamp,
+    location,
+    type,
+    cause,
+    gravity,
+    status,
+  } = req.body;
+
+  if (!robot_id || !incident_timestamp || !location || !type || !cause || !gravity || !status) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  }
+
+  // Generar ID automáticamente (ejemplo: "INC-007")
+  const idResult = await pool.query('SELECT COUNT(*) FROM incidents');
+  const count = parseInt(idResult.rows[0].count) + 1;
+  const newId = `INC-${count.toString().padStart(3, '0')}`;
+
+  try {
+    await pool.query(
+      `INSERT INTO incidents (id, robot_id, incident_timestamp, location, type, cause, gravity, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [newId, robot_id, incident_timestamp, location, type, cause, gravity, status]
+    );
+    res.status(201).json({ mensaje: 'Incidente creado', id: newId });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al crear incidente' });
+  }
+});
+
+// Obtener todos los incidentes
+router.get('/', async (_req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM incidents ORDER BY incident_timestamp DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener incidentes' });
+  }
+});
+
+// Obtener un incidente por ID
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ mensaje: 'Incidente no encontrado' });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al obtener incidente' });
+  }
+});
+
+// Actualizar un incidente
+router.put('/:id', async (req, res) => {
+  const { id } = req.params;
+  const {
+    robot_id,
+    incident_timestamp,
+    location,
+    type,
+    cause,
+    gravity,
+    status,
+  } = req.body;
+
+  try {
+    await pool.query(
+      `UPDATE incidents
+       SET robot_id = $1, incident_timestamp = $2, location = $3, type = $4, cause = $5, gravity = $6, status = $7
+       WHERE id = $8`,
+      [robot_id, incident_timestamp, location, type, cause, gravity, status, id]
+    );
+    res.json({ mensaje: 'Incidente actualizado' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al actualizar incidente' });
+  }
+});
+
+// Eliminar un incidente
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM incidents WHERE id = $1', [id]);
+    res.json({ mensaje: 'Incidente eliminado' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Error al eliminar incidente' });
+  }
+});
+
+module.exports = router;
+
+
+
+
+
+
+
+
+
+
+
+
+/*const express = require('express');
+const router = express.Router();
+const pool = require('../db');
+
 // Crear incidente
 router.post('/', async (req, res) => {
   const { robots, tecnicos, fecha, ubicacion, tipo, causa, gravedad } = req.body;
@@ -197,4 +313,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = router;*/

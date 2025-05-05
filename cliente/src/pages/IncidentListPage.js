@@ -36,20 +36,21 @@ import CircularProgress from '@mui/material/CircularProgress';
 
 // Importa el formulario de edición y los datos mock
 import EditIncidentForm from '../components/EditIncidentForm';
-import { mockIncidentsData } from '../data/mockIncidents'; // Ajusta la ruta si es necesario
+//import { mockIncidentsData } from '../data/mockIncidents'; // Ajusta la ruta si es necesario
 
 // Definición de columnas filtrables
 const filterableColumns = [
   { key: 'all', label: 'Todas las Columnas' },
   { key: 'id', label: 'ID Incidente' },
-  { key: 'robotId', label: 'Robot Afectado' },
+  { key: 'robot_id', label: 'Robot Afectado' },
   { key: 'location', label: 'Ubicación' },
   { key: 'type', label: 'Tipo' },
   { key: 'status', label: 'Estado' },
   { key: 'gravity', label: 'Gravedad' },
-  { key: 'incidentTimestamp', label: 'Fecha y Hora' },
+  { key: 'incident_timestamp', label: 'Fecha y Hora' },
   { key: 'cause', label: 'Causa' },
 ];
+
 
 // Función para formatear fecha/hora
 const formatDateTime = (dateTimeString) => {
@@ -89,10 +90,27 @@ function IncidentListPage() {
 
   // --- Efectos ---
 
+
+  const fetchIncidentsFromAPI = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/incidentes'); // Ajusta el puerto si es distinto
+      if (!response.ok) {
+        throw new Error('Error al obtener los incidentes');
+      }
+      const data = await response.json();
+      setIncidents(data);
+      console.log(data);
+    } catch (error) {
+      console.error('Error al cargar incidentes desde la API:', error);
+      showSnackbar('No se pudieron cargar los incidentes.', 'error');
+    }
+  };
+
   // Carga inicial de datos (simulada)
   useEffect(() => {
     setTimeout(() => {
-        setIncidents(mockIncidentsData);
+        //setIncidents(mockIncidentsData);
+        fetchIncidentsFromAPI();
         // setFilteredIncidents(mockIncidentsData); // No es necesario aquí, el siguiente useEffect lo hará
     }, 200);
   }, []); // Ejecutar solo al montar
@@ -114,7 +132,7 @@ function IncidentListPage() {
                 if (col.key === 'all') return false; // No buscar en la opción 'all'
                 const value = incident[col.key];
                 // Manejo especial para la fecha/hora
-                if (col.key === 'incidentTimestamp') {
+                if (col.key === 'incident_timestamp') {
                     return formatDateTime(value).toLowerCase().includes(lowerCaseFilter);
                 }
                 // Comparación general (asegurándose que el valor exista y convirtiendo a string)
@@ -124,7 +142,7 @@ function IncidentListPage() {
             // Busca solo en la columna seleccionada
             const value = incident[filterColumn];
              // Manejo especial para la fecha/hora
-            if (filterColumn === 'incidentTimestamp') {
+            if (filterColumn === 'incident_timestamp') {
                 return formatDateTime(value).toLowerCase().includes(lowerCaseFilter);
             }
             // Comparación general
@@ -187,21 +205,35 @@ function IncidentListPage() {
   // Manejador para guardar cambios (simulado)
   const handleSaveChanges = async (editedData) => {
     setIsSaving(true);
-    console.log("Guardando cambios (simulado):", editedData);
     try {
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIncidents(prevIncidents =>
-            prevIncidents.map(inc =>
-                String(inc.id) === String(editedData.id) ? { ...inc, ...editedData } : inc
-            )
-        );
-        showSnackbar('Incidente actualizado correctamente.', 'success');
-        handleCloseEditModal();
+      const response = await fetch(`http://localhost:3001/api/incidentes/${editedData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editedData),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al actualizar el incidente');
+      }
+  
+      const updatedIncident = await response.json();
+  
+      // Actualiza el estado local
+      setIncidents(prevIncidents =>
+        prevIncidents.map(inc =>
+          String(inc.id) === String(updatedIncident.id) ? updatedIncident : inc
+        )
+      );
+  
+      showSnackbar('Incidente actualizado correctamente.', 'success');
+      handleCloseEditModal();
     } catch (error) {
-        console.error("Error al guardar:", error);
-        showSnackbar(error.message || 'No se pudo actualizar el incidente.', 'error');
+      console.error("Error al guardar:", error);
+      showSnackbar(error.message || 'No se pudo actualizar el incidente.', 'error');
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -222,18 +254,25 @@ function IncidentListPage() {
   };
 
   // Manejador para eliminar (placeholder)
-  const handleDelete = (id) => {
-    console.log("Eliminar incidente:", id);
-    // Lógica futura: Confirmación -> API Delete -> Actualizar estado 'incidents' -> Snackbar
-    if (window.confirm(`¿Está seguro de que desea eliminar el incidente ${id}? Esta acción no se puede deshacer.`)) {
-        console.log("Confirmado - Llamando a API (simulado)");
-        // Simular llamada a API y actualización
-        setTimeout(() => {
-            setIncidents(prevIncidents => prevIncidents.filter(inc => String(inc.id) !== String(id)));
-            showSnackbar('Incidente eliminado (simulación).', 'warning');
-        }, 500);
-    } else {
-        console.log("Eliminación cancelada");
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(`¿Está seguro de que desea eliminar el incidente ${id}? Esta acción no se puede deshacer.`);
+    if (!confirmDelete) return;
+  
+    try {
+      const response = await fetch(`http://localhost:3001/api/incidentes/${id}`, {
+        method: 'DELETE',
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al eliminar el incidente');
+      }
+  
+      // Elimina el incidente del estado local
+      setIncidents(prevIncidents => prevIncidents.filter(inc => String(inc.id) !== String(id)));
+      showSnackbar('Incidente eliminado correctamente.', 'warning');
+    } catch (error) {
+      console.error('Error al eliminar incidente:', error);
+      showSnackbar('No se pudo eliminar el incidente.', 'error');
     }
   };
 
@@ -306,8 +345,8 @@ function IncidentListPage() {
                 filteredIncidents.map((incident) => (
                   <TableRow hover key={incident.id}>
                     <TableCell>{incident.id}</TableCell>
-                    <TableCell>{incident.robotId}</TableCell>
-                    <TableCell>{formatDateTime(incident.incidentTimestamp)}</TableCell>
+                    <TableCell>{incident.robot_id}</TableCell>
+                    <TableCell>{formatDateTime(incident.incident_timestamp)}</TableCell>
                     <TableCell>{incident.location}</TableCell>
                     <TableCell>{incident.type}</TableCell>
                     <TableCell>{incident.status}</TableCell>
@@ -337,8 +376,8 @@ function IncidentListPage() {
         <DialogContent dividers>
             {selectedIncident ? (
                 <Grid container spacing={1}>
-                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Robot:</Typography><Typography>{selectedIncident.robotId}</Typography></Grid>
-                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Fecha/Hora:</Typography><Typography>{formatDateTime(selectedIncident.incidentTimestamp)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Robot:</Typography><Typography>{selectedIncident.robot_id}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Fecha/Hora:</Typography><Typography>{formatDateTime(selectedIncident.incident_timestamp)}</Typography></Grid>
                     <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Ubicación:</Typography><Typography>{selectedIncident.location}</Typography></Grid>
                     <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Tipo:</Typography><Typography>{selectedIncident.type}</Typography></Grid>
                     <Grid item xs={12} sm={6}><Typography variant="body2" color="text.secondary">Estado:</Typography><Typography>{selectedIncident.status}</Typography></Grid>

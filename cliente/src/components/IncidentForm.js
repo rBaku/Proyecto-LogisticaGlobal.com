@@ -29,7 +29,7 @@ const defaultStatus = 'Creado';
 
 // Recibe onResult en lugar de onSuccess
 function IncidentForm({ onResult }) {
-  const [robotId, setRobotId] = useState('');
+  const [robot_id, setRobotId] = useState('');
   const [dateTime, setDateTime] = useState('');
   const [location, setLocation] = useState('');
   const [type, setType] = useState(''); // Tipo de incidente
@@ -45,8 +45,8 @@ function IncidentForm({ onResult }) {
     // La validación básica de MUI (required) ayuda, pero puedes añadir más aquí si es necesario
 
     const incidentData = {
-      robotId,
-      incidentTimestamp: dateTime,
+      robot_id,
+      incident_timestamp: new Date(dateTime).toISOString(),
       location,
       type,
       cause,
@@ -58,32 +58,24 @@ function IncidentForm({ onResult }) {
 
     // --- Simulación de llamada al Backend ---
     try {
-        // Reemplaza '/api/incidents' con tu endpoint real
-      //   const response = await fetch('/api/incidents', {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json' },
-      //     body: JSON.stringify(incidentData),
-      //   });
-      //   if (!response.ok) {
-      //     const errorData = await response.json();
-      //     throw new Error(errorData.message || `Error ${response.status}`);
-      //   }
-      //   const newIncident = await response.json();
-
-        // --- Simulación de respuesta (reemplazar con lo de arriba) ---
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simula espera
-        // Descomenta la línea de abajo para simular un error a veces
-        // if (Math.random() > 0.5) throw new Error("Error simulado de red");
-        const newIncident = { ...incidentData, id: Date.now() };
-        // --- Fin Simulación ---
-
-      // Llama a onResult indicando éxito y pasando los datos
+      const response = await fetch('http://localhost:3001/api/incidentes', { // ajusta la URL si es necesario
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(incidentData),
+      });
+    
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}`);
+      }
+    
+      const newIncident = await response.json();
+    
       if (onResult) {
         onResult(true, newIncident);
       }
-       // Podrías limpiar el formulario aquí si lo deseas después del éxito
-       // setRobotId(''); setDateTime(''); setLocation(''); setType(''); setCause('');
-
     } catch (err) {
       console.error('Error al crear incidente:', err);
       const errorMessage = err.message || 'Ocurrió un error al registrar el incidente.';
@@ -110,8 +102,8 @@ function IncidentForm({ onResult }) {
 
         <TextField
           label="Identificador del Robot Afectado"
-          id="robotId"
-          value={robotId}
+          id="robot_id"
+          value={robot_id}
           onChange={(e) => setRobotId(e.target.value)}
           required // Validación básica de MUI/HTML5
           fullWidth // Ocupa todo el ancho
