@@ -20,6 +20,17 @@ function SupervisorView() {
     fetchIncidentes();
   }, []);
 
+  const [filters, setFilters] = useState({
+    fecha: '',
+    ubicacion: '',
+    tipo: '',
+    causa: '',
+    gravedad: '',
+    estado: '',
+    robots: '',
+    tecnicos: '',
+  });
+
   const fetchIncidentes = () => {
     fetch('http://localhost:3001/api/incidentes')
       .then(res => {
@@ -45,6 +56,24 @@ function SupervisorView() {
     });
   };
 
+  const handleDeleteIncident = async (id) => {
+    if (!window.confirm("¿Estás seguro de eliminar este incidente?")) return;
+  
+    try {
+      const response = await fetch(`http://localhost:3001/api/incidentes/${id}`, {
+        method: 'DELETE',
+      });
+  
+      if (!response.ok) {
+        const data = await response.json();
+        setError(data.message || 'Error al eliminar');
+      } else {
+        setIncidentes(incidentes.filter((inc) => inc.id !== id));
+      }
+    } catch (err) {
+      setError('Error al conectar con el servidor');
+    }
+  };
   const handleEditIncident = (incidente) => {
     setFormData({
         id: incidente.id,
@@ -105,6 +134,19 @@ function SupervisorView() {
     }
   };
 
+  const filteredIncidentes = incidentes.filter((incidente) => {
+    return (
+      (!filters.fecha || incidente.fecha.startsWith(filters.fecha)) &&
+      (!filters.ubicacion || incidente.ubicacion.toLowerCase().includes(filters.ubicacion.toLowerCase())) &&
+      (!filters.tipo || incidente.tipo.toLowerCase().includes(filters.tipo.toLowerCase())) &&
+      (!filters.causa || incidente.causa.toLowerCase().includes(filters.causa.toLowerCase())) &&
+      (!filters.gravedad || incidente.gravedad.toString() === filters.gravedad) &&
+      (!filters.estado || incidente.estado.toLowerCase().includes(filters.estado.toLowerCase())) &&
+      (!filters.robots || (incidente.robots || []).some(r => r.toLowerCase().includes(filters.robots.toLowerCase()))) &&
+      (!filters.tecnicos || (incidente.tecnicos || []).some(t => t.toLowerCase().includes(filters.tecnicos.toLowerCase())))
+    );
+  });
+
   return (
     <div>
       <h2>Vista del Supervisor</h2>
@@ -112,6 +154,16 @@ function SupervisorView() {
       <button onClick={handleAddIncident} style={{ marginBottom: '10px' }}>
         Añadir Incidente
       </button>
+
+      <h3>Filtros</h3>
+      <input placeholder="Fecha" type="date" onChange={e => setFilters({ ...filters, fecha: e.target.value })} />
+      <input placeholder="Ubicación" onChange={e => setFilters({ ...filters, ubicacion: e.target.value })} />
+      <input placeholder="Tipo" onChange={e => setFilters({ ...filters, tipo: e.target.value })} />
+      <input placeholder="Causa" onChange={e => setFilters({ ...filters, causa: e.target.value })} />
+      <input placeholder="Gravedad" type="number" onChange={e => setFilters({ ...filters, gravedad: e.target.value })} />
+      <input placeholder="Estado" onChange={e => setFilters({ ...filters, estado: e.target.value })} />
+      <input placeholder="Robot" onChange={e => setFilters({ ...filters, robots: e.target.value })} />
+      <input placeholder="Técnico" onChange={e => setFilters({ ...filters, tecnicos: e.target.value })} />
 
       {formVisible && (
         <form onSubmit={handleSubmit} style={{ marginBottom: '20px', border: '1px solid #ccc', padding: '10px' }}>
@@ -154,22 +206,25 @@ function SupervisorView() {
           </tr>
         </thead>
         <tbody>
-          {incidentes.map((inc) => (
-            <tr key={inc.id}>
-              <td>{inc.id}</td>
-              <td>{new Date(inc.fecha).toLocaleDateString()}</td>
-              <td>{inc.ubicacion}</td>
-              <td>{inc.tipo}</td>
-              <td>{inc.causa}</td>
-              <td>{inc.gravedad}</td>
-              <td>{inc.estado}</td>
-              <td>{(inc.robots || []).join(', ')}</td>
-              <td>{(inc.tecnicos || []).join(', ')}</td>
-              <td>
-                <button onClick={() => handleEditIncident(inc)}>Editar</button>
-              </td>
-            </tr>
-          ))}
+            {filteredIncidentes.map((inc) => (
+                <tr key={inc.id}>
+                <td>{inc.id}</td>
+                <td>{new Date(inc.fecha).toLocaleDateString()}</td>
+                <td>{inc.ubicacion}</td>
+                <td>{inc.tipo}</td>
+                <td>{inc.causa}</td>
+                <td>{inc.gravedad}</td>
+                <td>{inc.estado}</td>
+                <td>{(inc.robots || []).join(', ')}</td>
+                <td>{(inc.tecnicos || []).join(', ')}</td>
+                <td>
+                    <button onClick={() => handleEditIncident(inc)}>Editar</button>
+                    <button onClick={() => handleDeleteIncident(inc.id)} style={{ marginLeft: '10px', color: 'red' }}>
+                    Eliminar
+                    </button>
+                </td>
+                </tr>
+            ))}
         </tbody>
       </table>
     </div>
