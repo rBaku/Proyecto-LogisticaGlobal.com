@@ -18,12 +18,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
-  // Generar ID automáticamente (ejemplo: "INC-007")
-  const idResult = await pool.query('SELECT COUNT(*) FROM incidents');
-  const count = parseInt(idResult.rows[0].count) + 1;
-  const newId = `INC-${count.toString().padStart(3, '0')}`;
-
   try {
+    // Generar ID automáticamente
+    const idResult = await pool.query('SELECT COUNT(*) FROM incidents');
+    const count = parseInt(idResult.rows[0].count) + 1;
+    const newId = `INC-${count.toString().padStart(3, '0')}`;
+
     await pool.query(
       `INSERT INTO incidents (id, robot_id, incident_timestamp, location, type, cause, gravity, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -31,8 +31,8 @@ router.post('/', async (req, res) => {
     );
     res.status(201).json({ mensaje: 'Incidente creado', id: newId });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear incidente' });
+    console.error('Error en POST /incidentes:', error);
+    res.status(500).json({ error: 'Error al crear incidente', details: error.message });
   }
 });
 
@@ -42,8 +42,8 @@ router.get('/', async (_req, res) => {
     const result = await pool.query('SELECT * FROM incidents ORDER BY incident_timestamp DESC');
     res.json(result.rows);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener incidentes' });
+    console.error('Error en GET /incidentes:', error);
+    res.status(500).json({ error: 'Error al obtener incidentes', details: error.message });
   }
 });
 
@@ -57,8 +57,8 @@ router.get('/:id', async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener incidente' });
+    console.error(`Error en GET /incidentes/${id}:`, error);
+    res.status(500).json({ error: 'Error al obtener incidente', details: error.message });
   }
 });
 
@@ -84,8 +84,8 @@ router.put('/:id', async (req, res) => {
     );
     res.json({ mensaje: 'Incidente actualizado' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al actualizar incidente' });
+    console.error(`Error en PUT /incidentes/${id}:`, error);
+    res.status(500).json({ error: 'Error al actualizar incidente', details: error.message });
   }
 });
 
@@ -96,21 +96,12 @@ router.delete('/:id', async (req, res) => {
     await pool.query('DELETE FROM incidents WHERE id = $1', [id]);
     res.json({ mensaje: 'Incidente eliminado' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al eliminar incidente' });
+    console.error(`Error en DELETE /incidentes/${id}:`, error);
+    res.status(500).json({ error: 'Error al eliminar incidente', details: error.message });
   }
 });
 
 module.exports = router;
-
-
-
-
-
-
-
-
-
 
 
 
