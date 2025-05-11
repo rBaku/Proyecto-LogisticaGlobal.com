@@ -2,67 +2,94 @@
 import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import Stack from '@mui/material/Stack';
-import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
 
-// Podrías centralizar estas listas si las usas en varios sitios
 const incidentTypes = ['Fallo mecánico', 'Colisión', 'Error de software', 'Batería baja', 'Obstrucción', 'Otro'];
 const incidentStatuses = ['Creado', 'En Investigación', 'Esperando Repuesto', 'Resuelto', 'Cerrado'];
-const incidentGravities = ['Sin asignar', 'Baja', 'Media', 'Alta', 'Crítica'];
+const gravityOptions = [
+    { value: null, label: 'Sin asignar' },
+    ...Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: (i + 1).toString() }))
+];
 
-// El componente recibe los datos iniciales, una función onSubmit y onCancel
-function EditIncidentForm({ initialData, onSubmit, onCancel, isLoading }) {
-    // Estado interno para los datos del formulario
-    const [formData, setFormData] = useState(initialData || {});
+function EditIncidentForm({ initialData, onSubmit, isLoading }) {
+    const [formData, setFormData] = useState({});
     const [formError, setFormError] = useState('');
+    const [availableTechnicians, setAvailableTechnicians] = useState([]);
+    const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
 
-    // Actualizar estado interno si cambian los datos iniciales (ej: se selecciona otro incidente)
     useEffect(() => {
-        setFormData(initialData || {});
-        setFormError(''); // Limpiar error al cambiar de incidente
+        setIsLoadingTechnicians(true);
+        fetch('http://localhost:3001/api/tecnicos')
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`Error al cargar técnicos: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(data => {
+                setAvailableTechnicians(data);
+            })
+            .catch(error => {
+                console.error("Error fetching technicians for edit form:", error);
+                setFormError(prevError => `${prevError || ''}\nError al cargar lista de técnicos: ${error.message}`.trim());
+                setAvailableTechnicians([]);
+            })
+            .finally(() => {
+                setIsLoadingTechnicians(false);
+            });
+    }, []);
+
+    useEffect(() => {
+        setFormData({
+            ...initialData,
+            gravity: initialData?.gravity === "Sin asignar" || initialData?.gravity === undefined ? null : initialData.gravity,
+        });
+        setFormError('');
     }, [initialData]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
         setFormData(prevData => ({
             ...prevData,
-            [name]: value,
+            [name]: value === "" && name === "gravity" ? null : value,
         }));
     };
 
-    const handleInternalSubmit = (event) => {
+    const handleInternalFormSubmit = (event) => {
         event.preventDefault();
-        setFormError(''); // Limpiar errores previos
-        // Validación básica (podría ser más compleja)
-        if (!formData.location || !formData.type || !formData.cause || !formData.status || !formData.gravity) {
-            setFormError('Por favor, complete todos los campos editables.');
+        setFormError('');
+        if (!formData.location || !formData.type || !formData.cause || !formData.status) {
+            setFormError('Por favor, complete todos los campos editables requeridos (Ubicación, Tipo, Causa, Estado).');
             return;
         }
-        // Llama a la función onSubmit pasada desde el padre
         onSubmit(formData);
     };
 
-    return (
-        // Usamos Box como form para evitar anidamiento <form> si Dialog ya lo es
-        <Box component="form" onSubmit={handleInternalSubmit} noValidate autoComplete="off">
-            <Stack spacing={2} sx={{ pt: 1 }}> {/* Añade padding top para separar del título */}
+    const gravitySelectValue = (formData.gravity === null || formData.gravity === undefined) ? "" : formData.gravity;
 
+    return (
+        <Box component="form" onSubmit={handleInternalFormSubmit} noValidate autoComplete="off">
+            <Stack spacing={2.5} sx={{ pt: 1 }}>
                 {formError && (
-                    <Typography color="error" variant="body2">{formError}</Typography>
+                    <Typography color="error" variant="body2" sx={{ whiteSpace: 'pre-line' }}>{formError}</Typography>
                 )}
 
-                {/* Campos no editables (informativos) */}
-                 <TextField label="ID Incidente" name="id" value={formData.id || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
-                 <TextField label="Robot Afectado" name="robotId" value={formData.robotId || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
-                 <TextField label="Fecha/Hora Creación" name="incidentTimestamp" value={formData.incidentTimestamp ? new Date(formData.incidentTimestamp).toLocaleString('es-CL') : ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
+                <TextField label="ID Incidente (BD)" name="id" value={formData.id || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
+                <TextField label="ID Reporte Empresa" name="company_report_id" value={formData.company_report_id || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
+                <TextField label="Robot Afectado" name="robot_id" value={formData.robot_id || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
+                <TextField
+                    label="Fecha/Hora Creación"
+                    name="incident_timestamp"
+                    value={formData.incident_timestamp ? new Date(formData.incident_timestamp).toLocaleString('es-CL') : ''}
+                    fullWidth disabled InputLabelProps={{ shrink: true }}
+                />
 
-                {/* Campos Editables */}
                 <TextField
                     label="Ubicación en el Almacén"
                     name="location"
@@ -73,15 +100,9 @@ function EditIncidentForm({ initialData, onSubmit, onCancel, isLoading }) {
                     InputLabelProps={{ shrink: true }}
                 />
 
-                 <FormControl fullWidth required disabled={isLoading}>
+                <FormControl fullWidth required disabled={isLoading}>
                     <InputLabel id="type-edit-label" shrink={!!formData.type}>Tipo de Incidente</InputLabel>
-                    <Select
-                        labelId="type-edit-label"
-                        name="type"
-                        value={formData.type || ''}
-                        label="Tipo de Incidente"
-                        onChange={handleChange}
-                    >
+                    <Select labelId="type-edit-label" name="type" value={formData.type || ''} label="Tipo de Incidente" onChange={handleChange}>
                         {incidentTypes.map((option) => ( <MenuItem key={option} value={option}>{option}</MenuItem> ))}
                     </Select>
                 </FormControl>
@@ -95,36 +116,62 @@ function EditIncidentForm({ initialData, onSubmit, onCancel, isLoading }) {
                     disabled={isLoading}
                     InputLabelProps={{ shrink: true }}
                 />
+                
+                <FormControl fullWidth required disabled={isLoading || isLoadingTechnicians}>
+                    <InputLabel id="technician-edit-label" shrink={!!formData.assigned_technician_id}>Técnico Asignado</InputLabel>
+                    <Select
+                        labelId="technician-edit-label"
+                        name="assigned_technician_id"
+                        value={formData.assigned_technician_id || ''}
+                        label="Técnico Asignado"
+                        onChange={handleChange}
+                        // Se eliminó endAdornment de aquí
+                    >
+                        {/* Indicador de carga puede ir cerca o deshabilitar el campo */}
+                        {isLoadingTechnicians && <MenuItem disabled><CircularProgress size={20} sx={{ml:1, mr:1}}/>Cargando técnicos...</MenuItem>}
+                        {!isLoadingTechnicians && availableTechnicians.length === 0 && <MenuItem disabled>No hay técnicos disponibles</MenuItem>}
+                        {availableTechnicians.map((tech) => (
+                            <MenuItem key={tech.id} value={tech.id}>{tech.full_name}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
 
                 <FormControl fullWidth required disabled={isLoading}>
                     <InputLabel id="status-edit-label" shrink={!!formData.status}>Estado</InputLabel>
-                    <Select
-                        labelId="status-edit-label"
-                        name="status"
-                        value={formData.status || ''}
-                        label="Estado"
-                        onChange={handleChange}
-                    >
+                    <Select labelId="status-edit-label" name="status" value={formData.status || ''} label="Estado" onChange={handleChange}>
                          {incidentStatuses.map((option) => ( <MenuItem key={option} value={option}>{option}</MenuItem> ))}
                     </Select>
                 </FormControl>
 
-                 <FormControl fullWidth required disabled={isLoading}>
-                    <InputLabel id="gravity-edit-label" shrink={!!formData.gravity}>Gravedad</InputLabel>
+                 <FormControl fullWidth disabled={isLoading}>
+                    <InputLabel id="gravity-edit-label" shrink={formData.gravity != null}>Gravedad (1-10)</InputLabel>
                     <Select
                         labelId="gravity-edit-label"
                         name="gravity"
-                        value={formData.gravity || ''}
-                        label="Gravedad"
+                        value={gravitySelectValue}
+                        label="Gravedad (1-10)"
                         onChange={handleChange}
+                        displayEmpty
                     >
-                        {incidentGravities.map((option) => ( <MenuItem key={option} value={option}>{option}</MenuItem> ))}
+                        {gravityOptions.map((option) => (
+                            <MenuItem key={option.label} value={option.value === null ? "" : option.value}>
+                                {option.label}
+                            </MenuItem>
+                        ))}
                     </Select>
                 </FormControl>
 
-                {/* Botones de acción (se manejarán en DialogActions) */}
-                {/* Se deja el botón submit aquí para que 'Enter' funcione en el form */}
-                 <Button type="submit" sx={{ display: 'none' }}>Submit</Button>
+                <TextField
+                    label="Comentario del Técnico"
+                    name="technician_comment"
+                    value={formData.technician_comment || ''}
+                    onChange={handleChange}
+                    fullWidth multiline rows={3}
+                    disabled={isLoading}
+                    InputLabelProps={{ shrink: true }}
+                    helperText="Notas o detalles adicionales del técnico."
+                />
+                <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
             </Stack>
         </Box>
     );

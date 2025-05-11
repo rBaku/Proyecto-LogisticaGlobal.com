@@ -1,5 +1,4 @@
-// src/components/IncidentForm.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
@@ -7,109 +6,231 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
-import Stack from '@mui/material/Stack'; // Para espaciar elementos fácilmente
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress'; // Indicador de carga
+import CircularProgress from '@mui/material/CircularProgress';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
 
-// Los tipos de incidente no cambian
-const incidentTypes = [
-    // Quitamos la opción vacía, el Select de MUI maneja el placeholder
-    'Fallo mecánico',
-    'Colisión',
-    'Error de software',
-    'Batería baja',
-    'Obstrucción',
-    'Otro',
-];
+// --- Datos Simulados eliminados ---
 
-// Valores por defecto definidos por el sistema
-const defaultGravity = 'Sin asignar';
+const incidentTypes = ['Fallo mecánico', 'Colisión', 'Error de software', 'Batería baja', 'Obstrucción', 'Otro'];
 const defaultStatus = 'Creado';
 
-
-// Recibe onResult en lugar de onSuccess
 function IncidentForm({ onResult }) {
-  const [robot_id, setRobotId] = useState('');
+  const [company_report_id, setCompanyReportId] = useState('');
+  const [selectedRobots, setSelectedRobots] = useState([]);
   const [dateTime, setDateTime] = useState('');
   const [location, setLocation] = useState('');
-  const [type, setType] = useState(''); // Tipo de incidente
+  const [type, setType] = useState('');
   const [cause, setCause] = useState('');
-  const [formError, setFormError] = useState(null); // Error específico del formulario
+  const [assigned_technician_id, setAssignedTechnicianId] = useState('');
+
+  const [formError, setFormError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRobots, setIsLoadingRobots] = useState(false); // Estado de carga para robots
+  const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false); // Estado de carga para técnicos
+  const [availableRobots, setAvailableRobots] = useState([]);
+  const [availableTechnicians, setAvailableTechnicians] = useState([]);
+
+  useEffect(() => {
+    // Fetch para robots
+    setIsLoadingRobots(true);
+    fetch('http://localhost:3001/api/robots') // <-- URL actualizada
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Error al cargar robots: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setAvailableRobots(data.filter(r => r.is_operational)); // Solo robots operativos
+      })
+      .catch(error => {
+        console.error("Error fetching robots:", error);
+        setFormError(prevError => `${prevError || ''}\nError al cargar lista de robots: ${error.message}`);
+        setAvailableRobots([]); // Limpiar en caso de error
+      })
+      .finally(() => {
+        setIsLoadingRobots(false);
+      });
+
+    // Fetch para técnicos
+    setIsLoadingTechnicians(true);
+    fetch('http://localhost:3001/api/tecnicos') // <-- URL actualizada
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Error al cargar técnicos: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        setAvailableTechnicians(data);
+      })
+      .catch(error => {
+        console.error("Error fetching technicians:", error);
+        setFormError(prevError => `${prevError || ''}\nError al cargar lista de técnicos: ${error.message}`);
+        setAvailableTechnicians([]); // Limpiar en caso de error
+      })
+      .finally(() => {
+        setIsLoadingTechnicians(false);
+      });
+  }, []);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setIsLoading(true);
-    setFormError(null); // Limpia errores previos
+    setFormError(null);
 
-    // La validación básica de MUI (required) ayuda, pero puedes añadir más aquí si es necesario
+    if (!company_report_id.trim()) {
+      setFormError('El ID de Reporte de Empresa es obligatorio.');
+      setIsLoading(false);
+      return;
+    }
+    if (selectedRobots.length === 0) {
+      setFormError('Debe seleccionar al menos un robot afectado.');
+      setIsLoading(false);
+      return;
+    }
+    if (!assigned_technician_id) {
+      setFormError('Debe asignar un técnico al incidente.');
+      setIsLoading(false);
+      return;
+    }
+    if (!dateTime) { // Validar que la fecha no esté vacía
+        setFormError('La Fecha y Hora del Incidente es obligatoria.');
+        setIsLoading(false);
+        return;
+    }
 
-    const incidentData = {
-      robot_id,
-      incident_timestamp: new Date(dateTime).toISOString(),
-      location,
-      type,
-      cause,
-      gravity: defaultGravity,
-      status: defaultStatus,
-    };
 
-    console.log('Enviando datos al backend (simulado):', incidentData);
+    const createIncidentPromises = selectedRobots.map(robot => {
+      const incidentData = {
+        company_report_id: company_report_id.trim(),
+        robot_id: robot.id,
+        incident_timestamp: new Date(dateTime).toISOString(),
+        location,
+        type,
+        cause,
+        assigned_technician_id,
+        gravity: null, // Gravedad es null al crear
+      };
+      console.log('Enviando datos para robot:', robot.id, incidentData);
 
-    // --- Simulación de llamada al Backend ---
-    try {
-      const response = await fetch('http://localhost:3001/api/incidentes', { // ajusta la URL si es necesario
+      return fetch('http://localhost:3001/api/incidentes', { // <-- URL actualizada
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(incidentData),
+      }).then(async response => {
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
+          throw new Error(`Robot ${robot.name}: ${errorData.message || `Error ${response.status}`}`);
+        }
+        return response.json();
       });
-    
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Error ${response.status}`);
-      }
-    
-      const newIncident = await response.json();
-    
-      if (onResult) {
-        onResult(true, newIncident);
+    });
+
+    try {
+      const results = await Promise.allSettled(createIncidentPromises);
+      const successfulCreations = [];
+      const failedCreations = [];
+
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          successfulCreations.push(result.value);
+        } else {
+          failedCreations.push({ robotName: selectedRobots[index].name, error: result.reason.message });
+        }
+      });
+
+      if (failedCreations.length > 0) {
+        const errorMessages = failedCreations.map(f => `  - ${f.robotName}: ${f.error}`).join('\n');
+        const mainErrorMessage = `Algunos incidentes no pudieron registrarse:\n${errorMessages}`;
+        setFormError(mainErrorMessage);
+        if (onResult) {
+          onResult(false, { successfulCreations, failedCreations, message: mainErrorMessage });
+        }
+      } else {
+        if (onResult) {
+          onResult(true, successfulCreations);
+           // Limpiar formulario tras éxito
+           setCompanyReportId('');
+           setSelectedRobots([]);
+           setDateTime('');
+           setLocation('');
+           setType('');
+           setCause('');
+           setAssignedTechnicianId('');
+        }
       }
     } catch (err) {
-      console.error('Error al crear incidente:', err);
-      const errorMessage = err.message || 'Ocurrió un error al registrar el incidente.';
-      setFormError(errorMessage); // Muestra error en el formulario
-      // Llama a onResult indicando fallo y pasando el mensaje de error
+      console.error('Error general al procesar la creación de incidentes:', err);
+      const errorMessage = 'Ocurrió un error inesperado al registrar los incidentes.';
+      setFormError(errorMessage);
       if (onResult) {
-        onResult(false, errorMessage);
+        onResult(false, { message: errorMessage });
       }
     } finally {
       setIsLoading(false);
     }
-    // --- Fin de la llamada al Backend ---
   };
 
   return (
-    // Usamos Box como formulario y Stack para organizar los campos
     <Box component="form" onSubmit={handleSubmit} noValidate autoComplete="off">
-      <Stack spacing={3}> {/* Espaciado entre elementos del Stack */}
-
-        {/* Muestra el error del formulario */}
+      <Stack spacing={3}>
         {formError && (
-            <Typography color="error" variant="body2">{formError}</Typography>
+            <Typography color="error" variant="body2" sx={{ whiteSpace: 'pre-line' }}>{formError}</Typography>
         )}
 
         <TextField
-          label="Identificador del Robot Afectado"
-          id="robot_id"
-          value={robot_id}
-          onChange={(e) => setRobotId(e.target.value)}
-          required // Validación básica de MUI/HTML5
-          fullWidth // Ocupa todo el ancho
-          helperText="Registrar un incidente por cada robot afectado."
+          label="ID Reporte Empresa"
+          id="company_report_id"
+          value={company_report_id}
+          onChange={(e) => setCompanyReportId(e.target.value)}
+          required fullWidth
+          helperText="ID interno para agrupar este evento/reporte."
           disabled={isLoading}
         />
+
+        <Autocomplete
+          multiple
+          id="robots-autocomplete"
+          options={availableRobots}
+          loading={isLoadingRobots}
+          getOptionLabel={(option) => `${option.name} ${option.is_operational ? '' : '(No Operativo)'}`}
+          value={selectedRobots}
+          onChange={(event, newValue) => {
+            setSelectedRobots(newValue);
+          }}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              label="Robots Afectados"
+              placeholder="Seleccione robots"
+              required
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <React.Fragment>
+                    {isLoadingRobots ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </React.Fragment>
+                ),
+              }}
+            />
+          )}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip variant="outlined" label={option.name} {...getTagProps({ index })} />
+            ))
+          }
+          disabled={isLoading || isLoadingRobots}
+        />
+        <Typography variant="caption" color="textSecondary">
+            {selectedRobots.length > 0 ? `Se registrará un incidente individual para cada robot.` : "Seleccione los robots involucrados."}
+        </Typography>
 
         <TextField
           label="Fecha y Hora del Incidente"
@@ -117,38 +238,46 @@ function IncidentForm({ onResult }) {
           id="dateTime"
           value={dateTime}
           onChange={(e) => setDateTime(e.target.value)}
-          required
-          fullWidth
-          InputLabelProps={{
-            shrink: true, // Importante para que el label no tape el input datetime-local
-          }}
+          required fullWidth
+          InputLabelProps={{ shrink: true }}
           disabled={isLoading}
         />
 
         <TextField
-          label="Ubicación en el Almacén (Sector/Pasillo)"
+          label="Ubicación en el Almacén"
           id="location"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          required
-          fullWidth
+          required fullWidth
           disabled={isLoading}
         />
 
-        {/* Select para el tipo de incidente */}
         <FormControl fullWidth required disabled={isLoading}>
           <InputLabel id="type-select-label">Tipo de Incidente</InputLabel>
           <Select
             labelId="type-select-label"
             id="type-select"
             value={type}
-            label="Tipo de Incidente" // El label debe coincidir con InputLabel
+            label="Tipo de Incidente"
             onChange={(e) => setType(e.target.value)}
           >
-            {/* No necesitas un MenuItem vacío, Select lo maneja */}
-            {incidentTypes.map((option) => (
-              <MenuItem key={option} value={option}>
-                {option}
+            {incidentTypes.map((option) => ( <MenuItem key={option} value={option}>{option}</MenuItem> ))}
+          </Select>
+        </FormControl>
+
+        <FormControl fullWidth required disabled={isLoading || isLoadingTechnicians}>
+          <InputLabel id="technician-select-label">Técnico Asignado</InputLabel>
+          <Select
+            labelId="technician-select-label"
+            id="technician-select"
+            value={assigned_technician_id}
+            label="Técnico Asignado"
+            onChange={(e) => setAssignedTechnicianId(e.target.value)}
+            endAdornment={isLoadingTechnicians ? <CircularProgress color="inherit" size={20} sx={{mr: 2}}/> : null}
+          >
+            {availableTechnicians.map((tech) => (
+              <MenuItem key={tech.id} value={tech.id}>
+                {tech.full_name} {/* API devuelve full_name */}
               </MenuItem>
             ))}
           </Select>
@@ -159,45 +288,22 @@ function IncidentForm({ onResult }) {
           id="cause"
           value={cause}
           onChange={(e) => setCause(e.target.value)}
-          required
-          fullWidth
-          multiline // Para que sea un textarea
-          rows={4}    // Altura inicial
+          required fullWidth multiline rows={3}
           disabled={isLoading}
         />
 
-        {/* Campos informativos deshabilitados */}
-         <TextField
-            label="Gravedad"
-            id="gravity"
-            value={defaultGravity}
-            fullWidth
-            disabled // Deshabilitado visualmente
-            InputProps={{
-                readOnly: true, // También previene edición si no estuviera disabled
-            }}
-         />
-         <TextField
-            label="Estado Inicial"
-            id="status"
-            value={defaultStatus}
-            fullWidth
-            disabled
-            InputProps={{
-                readOnly: true,
-            }}
-         />
+        <TextField label="Gravedad Inicial" value="Sin asignar (Supervisor asignará numéricamente)" fullWidth disabled InputProps={{ readOnly: true }} />
+        <TextField label="Estado Inicial" value={defaultStatus} fullWidth disabled InputProps={{ readOnly: true }} />
 
-        {/* Botón de envío con indicador de carga */}
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
-            <Button
-                type="submit"
-                variant="contained"
-                disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} color="inherit"/> : null}
-            >
-                {isLoading ? 'Registrando...' : 'Registrar Incidente'}
-            </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={isLoading || isLoadingRobots || isLoadingTechnicians}
+            startIcon={isLoading ? <CircularProgress size={20} color="inherit"/> : null}
+          >
+            {isLoading ? 'Registrando...' : 'Registrar Incidente(s)'}
+          </Button>
         </Box>
       </Stack>
     </Box>

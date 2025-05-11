@@ -3,7 +3,9 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import CreateIncidentPage from './pages/CreateIncidentPage';
-import IncidentListPage from './pages/IncidentListPage'; // <-- Importar la nueva página
+import IncidentListPage from './pages/IncidentListPage';
+import RobotStatusPage from './pages/RobotStatusPage';
+import TechnicianViewPage from './pages/TechnicianViewPage';
 import Navbar from './components/Navbar';
 import Box from '@mui/material/Box';
 
@@ -15,8 +17,9 @@ function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/crear-incidente" element={<CreateIncidentPage />} />
-          <Route path="/incidentes" element={<IncidentListPage />} /> {/* <-- Añadir la ruta */}
-          {/* Agrega más rutas aquí */}
+          <Route path="/incidentes" element={<IncidentListPage />} />
+          <Route path="/robots-estado" element={<RobotStatusPage />} />
+          <Route path="/tecnico/incidentes" element={<TechnicianViewPage />} />
         </Routes>
       </Box>
        {/* Footer Opcional */}

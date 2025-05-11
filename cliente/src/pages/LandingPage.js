@@ -71,18 +71,27 @@ function LandingPage() {
           </Card>
         </Grid>
 
-        {/* Placeholder Card: Generar Reportes */}
+        {/* Placeholder Card: Ver estado robots */}
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography gutterBottom variant="h5" component="h2">
-                Generar Reportes
+                Estado de Robots
               </Typography>
               <Typography>
-                Crea reportes mensuales o anuales con estadísticas clave. (Próximamente)
+                Ve el estado de operación actual de los robots.
               </Typography>
             </CardContent>
-             {/* <CardActions> <Button size="small" disabled>Generar</Button> </CardActions> */}
+            <CardActions>
+              <Button
+                size="small"
+                variant="contained" // Estilo de botón principal
+                component={RouterLink} // Navegación con React Router
+                to="/robots-estado"
+              >
+                Consultar
+              </Button>
+            </CardActions>
           </Card>
         </Grid>
 

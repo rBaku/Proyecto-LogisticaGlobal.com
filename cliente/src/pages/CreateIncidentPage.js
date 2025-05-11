@@ -1,12 +1,9 @@
-// src/pages/CreateIncidentPage.js
 import React from 'react';
 import IncidentForm from '../components/IncidentForm';
 import { useNavigate } from 'react-router-dom';
 import Container from '@mui/material/Container';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
-// Importa Snackbar para notificaciones (opcional, más elegante que alert)
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
@@ -14,7 +11,7 @@ function CreateIncidentPage() {
   const navigate = useNavigate();
   const [snackbarOpen, setSnackbarOpen] = React.useState(false);
   const [snackbarMessage, setSnackbarMessage] = React.useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = React.useState('success'); // 'success' or 'error'
+  const [snackbarSeverity, setSnackbarSeverity] = React.useState('success');
 
   const handleShowSnackbar = (message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -29,44 +26,42 @@ function CreateIncidentPage() {
     setSnackbarOpen(false);
   };
 
-
-  // Esta función se pasará al formulario para manejar el éxito o error
-  const handleResult = (success, data) => {
+  const handleResult = (success, resultData) => {
     if (success) {
-      console.log('Incidente creado:', data);
-      handleShowSnackbar('Incidente registrado exitosamente!', 'success');
-      // Espera un poco antes de redirigir para que el usuario vea el mensaje
+      const createdCount = resultData.length; // Array de incidentes creados
+      const message = createdCount > 1
+        ? `${createdCount} incidentes registrados exitosamente.`
+        : `Incidente registrado exitosamente.`;
+      console.log('Incidentes creados:', resultData);
+      handleShowSnackbar(message, 'success');
       setTimeout(() => {
-         navigate('/'); // O a la lista de incidentes
-      }, 1500); // 1.5 segundos
+         navigate('/incidentes');
+      }, 2000);
     } else {
-       console.error('Error al crear incidente:', data);
-       handleShowSnackbar(data || 'Ocurrió un error al registrar el incidente.', 'error');
+      console.error('Error al crear incidentes:', resultData);
+      handleShowSnackbar(resultData.message || 'Ocurrió un error al registrar.', 'error');
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 4 }}> {/* Contenedor centrado */}
-      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}> {/* Sombra y padding */}
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper elevation={3} sx={{ p: { xs: 2, sm: 3 } }}>
         <Typography variant="h5" component="h2" gutterBottom>
-          Registro Inicial de Incidente
+          Registro Inicial de Incidente(s)
         </Typography>
         <Typography variant="body1" color="text.secondary" paragraph>
-          Completa la información basada en la hoja física llenada por el jefe de turno.
+          Complete la información. Si selecciona múltiples robots, se creará un incidente individual para cada uno con el mismo ID de Reporte Empresa.
         </Typography>
-        {/* Pasamos la función de callback al formulario */}
         <IncidentForm onResult={handleResult} />
       </Paper>
 
-       {/* Snackbar para notificaciones */}
        <Snackbar
          open={snackbarOpen}
-         autoHideDuration={6000} // 6 segundos
+         autoHideDuration={8000}
          onClose={handleCloseSnackbar}
-         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} // Posición
+         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
        >
-         {/* Usamos Alert dentro de Snackbar para estilos de severidad */}
-         <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+         <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%', whiteSpace: 'pre-line' }} variant="filled">
            {snackbarMessage}
          </Alert>
        </Snackbar>

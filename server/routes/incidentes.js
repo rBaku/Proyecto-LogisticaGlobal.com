@@ -1,307 +1,177 @@
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const pool = require('../db'); // Tu módulo de conexión a la BD
 
-// Crear un nuevo incidente
-router.post('/', async (req, res) => {
+// POST /api/incidentes - Crear un nuevo incidente (ficha de incidente)
+router.post('/', async (req, res, next) => {
   const {
+    company_report_id, // ID manual de la empresa
     robot_id,
     incident_timestamp,
     location,
     type,
     cause,
-    gravity,
-    status,
+    assigned_technician_id,
+    // gravity viene como número (1-10) o null (si es "Sin asignar" desde el frontend)
+    // status es 'Creado' por defecto en la BD
+    gravity, // Puede ser null
   } = req.body;
 
-  if (!robot_id || !incident_timestamp || !location || !type || !cause || !gravity || !status) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
+  // Validación básica de campos obligatorios
+  if (!company_report_id || !robot_id || !incident_timestamp || !location || !type || !cause || !assigned_technician_id) {
+    return res.status(400).json({ error: 'Faltan campos obligatorios para crear el incidente.' });
+  }
+  if (gravity !== null && (typeof gravity !== 'number' || gravity < 1 || gravity > 10)) {
+    return res.status(400).json({ error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10.' });
   }
 
-  try {
-    // Generar ID automáticamente
-    const idResult = await pool.query('SELECT COUNT(*) FROM incidents');
-    const count = parseInt(idResult.rows[0].count) + 1;
-    const newId = `INC-${count.toString().padStart(3, '0')}`;
 
-    await pool.query(
-      `INSERT INTO incidents (id, robot_id, incident_timestamp, location, type, cause, gravity, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [newId, robot_id, incident_timestamp, location, type, cause, gravity, status]
-    );
-    res.status(201).json({ mensaje: 'Incidente creado', id: newId });
+  try {
+    const queryText = `
+      INSERT INTO Incidents (
+        company_report_id, robot_id, incident_timestamp, location, 
+        type, cause, assigned_technician_id, gravity, status 
+        -- id, created_at, updated_at son generados/default por la BD
+        -- technician_comment es NULL por defecto
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING *;`; // RETURNING * devuelve la fila insertada completa
+
+    const values = [
+      company_report_id,
+      robot_id,
+      incident_timestamp, // Frontend debe enviar en formato ISO 8601
+      location,
+      type,
+      cause,
+      assigned_technician_id,
+      gravity, // Puede ser null
+      'Creado', // Status por defecto al crear
+    ];
+
+    const result = await pool.query(queryText, values);
+    res.status(201).json(result.rows[0]); // Devuelve el incidente creado
   } catch (error) {
-    console.error('Error en POST /incidentes:', error);
-    res.status(500).json({ error: 'Error al crear incidente', details: error.message });
+    console.error('Error en POST /api/incidentes:', error);
+    // Pasa el error al siguiente manejador de errores
+    next(error); 
   }
 });
 
-// Obtener todos los incidentes
-router.get('/', async (_req, res) => {
+// GET /api/incidentes - Obtener todos los incidentes
+router.get('/', async (_req, res, next) => {
   try {
-    const result = await pool.query('SELECT * FROM incidents ORDER BY incident_timestamp DESC');
+    // Considera paginación para grandes cantidades de datos en el futuro
+    const result = await pool.query('SELECT * FROM Incidents ORDER BY incident_timestamp DESC, company_report_id, id;');
     res.json(result.rows);
   } catch (error) {
-    console.error('Error en GET /incidentes:', error);
-    res.status(500).json({ error: 'Error al obtener incidentes', details: error.message });
+    console.error('Error en GET /api/incidentes:', error);
+    next(error);
   }
 });
 
-// Obtener un incidente por ID
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
+// GET /api/incidentes/:id - Obtener un incidente específico por su ID de BD (UUID)
+router.get('/:id', async (req, res, next) => {
+  const { id } = req.params; // Este es el id UUID de la tabla Incidents
   try {
-    const result = await pool.query('SELECT * FROM incidents WHERE id = $1', [id]);
+    const result = await pool.query('SELECT * FROM Incidents WHERE id = $1', [id]);
     if (result.rowCount === 0) {
-      return res.status(404).json({ mensaje: 'Incidente no encontrado' });
+      return res.status(404).json({ message: 'Incidente no encontrado con el ID proporcionado.' });
     }
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(`Error en GET /incidentes/${id}:`, error);
-    res.status(500).json({ error: 'Error al obtener incidente', details: error.message });
+    console.error(`Error en GET /api/incidentes/${id}:`, error);
+    next(error);
   }
 });
 
-// Actualizar un incidente
-router.put('/:id', async (req, res) => {
-  const { id } = req.params;
+// PUT /api/incidentes/:id - Actualizar un incidente existente
+router.put('/:id', async (req, res, next) => {
+  const { id } = req.params; // ID (UUID) de la ficha de incidente a actualizar
   const {
-    robot_id,
+    // company_report_id, // Generalmente no se cambia, pero depende de la lógica de negocio
+    robot_id, // Podría cambiar si se reasigna el robot (raro para un incidente existente)
     incident_timestamp,
     location,
     type,
     cause,
-    gravity,
+    assigned_technician_id,
     status,
+    gravity, // Numérico 1-10 o null
+    technician_comment, // Nuevo campo para actualizar
   } = req.body;
 
+  // Validación (puedes expandirla)
+  if (!status) { // Un ejemplo, puedes validar más campos según tu lógica
+    return res.status(400).json({ error: 'El campo status es obligatorio para actualizar.' });
+  }
+   if (gravity !== undefined && gravity !== null && (typeof gravity !== 'number' || gravity < 1 || gravity > 10)) {
+    return res.status(400).json({ error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10 o null.' });
+  }
+
   try {
-    await pool.query(
-      `UPDATE incidents
-       SET robot_id = $1, incident_timestamp = $2, location = $3, type = $4, cause = $5, gravity = $6, status = $7
-       WHERE id = $8`,
-      [robot_id, incident_timestamp, location, type, cause, gravity, status, id]
-    );
-    res.json({ mensaje: 'Incidente actualizado' });
+    // Construir la query dinámicamente es más complejo y propenso a errores.
+    // Es más simple actualizar todos los campos permitidos.
+    // El frontend debería enviar el estado actual de todos los campos editables.
+    const queryText = `
+      UPDATE Incidents 
+      SET 
+        robot_id = COALESCE($1, robot_id), 
+        incident_timestamp = COALESCE($2, incident_timestamp), 
+        location = COALESCE($3, location), 
+        type = COALESCE($4, type), 
+        cause = COALESCE($5, cause), 
+        assigned_technician_id = COALESCE($6, assigned_technician_id), 
+        status = COALESCE($7, status), 
+        gravity = $8, -- Se permite NULL para gravity
+        technician_comment = COALESCE($9, technician_comment),
+        updated_at = NOW()
+      WHERE id = $10
+      RETURNING *;`;
+      // COALESCE se usa para mantener el valor actual si no se envía uno nuevo,
+      // pero para gravity, si se envía null, se actualiza a null.
+
+    const values = [
+      robot_id, 
+      incident_timestamp, 
+      location, 
+      type, 
+      cause, 
+      assigned_technician_id, 
+      status, 
+      gravity, // Se pasa directamente (puede ser null)
+      technician_comment,
+      id
+    ];
+    
+    const result = await pool.query(queryText, values);
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Incidente no encontrado para actualizar.' });
+    }
+    res.json(result.rows[0]); // Devuelve el incidente actualizado
   } catch (error) {
-    console.error(`Error en PUT /incidentes/${id}:`, error);
-    res.status(500).json({ error: 'Error al actualizar incidente', details: error.message });
+    console.error(`Error en PUT /api/incidentes/${id}:`, error);
+    next(error);
   }
 });
 
-// Eliminar un incidente
-router.delete('/:id', async (req, res) => {
-  const { id } = req.params;
+// DELETE /api/incidentes/:id - Eliminar una ficha de incidente
+router.delete('/:id', async (req, res, next) => {
+  const { id } = req.params; // ID (UUID) de la ficha
   try {
-    await pool.query('DELETE FROM incidents WHERE id = $1', [id]);
-    res.json({ mensaje: 'Incidente eliminado' });
+    const result = await pool.query('DELETE FROM Incidents WHERE id = $1 RETURNING id', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Incidente no encontrado para eliminar.' });
+    }
+    res.status(200).json({ message: 'Incidente eliminado exitosamente.', id: result.rows[0].id });
   } catch (error) {
-    console.error(`Error en DELETE /incidentes/${id}:`, error);
-    res.status(500).json({ error: 'Error al eliminar incidente', details: error.message });
+    console.error(`Error en DELETE /api/incidentes/${id}:`, error);
+    // Manejo específico de errores de FK podría ir aquí si es necesario
+    if (error.code === '23503') { // Código de error de violación de FK en PostgreSQL
+        return res.status(409).json({ error: 'Conflicto: El incidente no puede ser eliminado debido a referencias existentes.'});
+    }
+    next(error);
   }
 });
 
 module.exports = router;
-
-
-
-/*const express = require('express');
-const router = express.Router();
-const pool = require('../db');
-
-// Crear incidente
-router.post('/', async (req, res) => {
-  const { robots, tecnicos, fecha, ubicacion, tipo, causa, gravedad } = req.body;
-
-  // Validaciones de campos obligatorios
-  if (!fecha || !ubicacion || !tipo || !causa || gravedad === undefined || !Array.isArray(robots) || robots.length === 0) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios o robots' });
-  }
-
-  // Validar gravedad
-  if (typeof gravedad !== 'number' || gravedad < 1 || gravedad > 10) {
-    return res.status(400).json({ error: 'La gravedad debe ser un número entre 1 y 10' });
-  }
-
-  try {
-    // Verificar existencia de todos los robots
-    for (const nombreRobot of robots) {
-      const robot = await pool.query('SELECT id FROM robots WHERE nombre = $1', [nombreRobot]);
-      if (robot.rowCount === 0) {
-        return res.status(400).json({ error: `Robot no encontrado: ${nombreRobot}` });
-      }
-    }
-
-    // Verificar existencia de todos los técnicos (si se especifican)
-    for (const nombreTecnico of tecnicos || []) {
-      const tecnico = await pool.query('SELECT id FROM tecnicos WHERE nombre = $1', [nombreTecnico]);
-      if (tecnico.rowCount === 0) {
-        return res.status(400).json({ error: `Técnico no encontrado: ${nombreTecnico}` });
-      }
-    }
-
-    // Insertar incidente
-    const result = await pool.query(
-      `INSERT INTO incidentes (fecha, ubicacion, tipo, causa, gravedad, estado)
-       VALUES ($1, $2, $3, $4, $5, 'CREADO') RETURNING id`,
-      [fecha, ubicacion, tipo, causa, gravedad]
-    );
-
-    const incidenteId = result.rows[0].id;
-
-    // Relacionar robots
-    for (const nombreRobot of robots) {
-      const robot = await pool.query('SELECT id FROM robots WHERE nombre = $1', [nombreRobot]);
-      await pool.query(
-        'INSERT INTO incidentes_robots (incidente_id, robot_id) VALUES ($1, $2)',
-        [incidenteId, robot.rows[0].id]
-      );
-    }
-
-    // Relacionar técnicos (si hay)
-    for (const nombreTecnico of tecnicos || []) {
-      const tecnico = await pool.query('SELECT id FROM tecnicos WHERE nombre = $1', [nombreTecnico]);
-      await pool.query(
-        'INSERT INTO incidentes_tecnicos (incidente_id, tecnico_id) VALUES ($1, $2)',
-        [incidenteId, tecnico.rows[0].id]
-      );
-    }
-
-    res.status(201).json({ mensaje: 'Incidente creado', incidenteId });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al crear incidente' });
-  }
-});
-
-// Obtener todos los incidentes
-router.get('/', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT i.*, 
-             array_agg(DISTINCT r.nombre) AS robots,
-             array_agg(DISTINCT t.nombre) AS tecnicos
-      FROM incidentes i
-      LEFT JOIN incidentes_robots ir ON i.id = ir.incidente_id
-      LEFT JOIN robots r ON ir.robot_id = r.id
-      LEFT JOIN incidentes_tecnicos it ON i.id = it.incidente_id
-      LEFT JOIN tecnicos t ON it.tecnico_id = t.id
-      GROUP BY i.id
-      ORDER BY i.id
-    `);
-    res.json(result.rows);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener incidentes' });
-  }
-});
-
-// Obtener un incidente por ID
-router.get('/:id', async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    const result = await pool.query(`
-      SELECT i.*, 
-             array_agg(DISTINCT r.nombre) AS robots,
-             array_agg(DISTINCT t.nombre) AS tecnicos
-      FROM incidentes i
-      LEFT JOIN incidentes_robots ir ON i.id = ir.incidente_id
-      LEFT JOIN robots r ON ir.robot_id = r.id
-      LEFT JOIN incidentes_tecnicos it ON i.id = it.incidente_id
-      LEFT JOIN tecnicos t ON it.tecnico_id = t.id
-      WHERE i.id = $1
-      GROUP BY i.id
-    `, [id]);
-
-    if (result.rowCount === 0) {
-      return res.status(404).json({ mensaje: 'Incidente no encontrado' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al obtener incidente' });
-  }
-});
-
-// Actualizar incidente
-router.put('/:id', async (req, res) => {
-  const id = req.params.id;
-  const { robots, tecnicos, fecha, ubicacion, tipo, causa, gravedad, estado } = req.body;
-
-  // Validaciones
-  if (!fecha || !ubicacion || !tipo || !causa || gravedad === undefined || !estado || !Array.isArray(robots) || robots.length === 0) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios o robots' });
-  }
-
-  if (typeof gravedad !== 'number' || gravedad < 1 || gravedad > 10) {
-    return res.status(400).json({ error: 'La gravedad debe ser un número entre 1 y 10' });
-  }
-
-  try {
-    // Verificar existencia de robots
-    for (const nombreRobot of robots) {
-      const robot = await pool.query('SELECT id FROM robots WHERE nombre = $1', [nombreRobot]);
-      if (robot.rowCount === 0) {
-        return res.status(400).json({ error: `Robot no encontrado: ${nombreRobot}` });
-      }
-    }
-
-    // Verificar existencia de técnicos
-    for (const nombreTecnico of tecnicos || []) {
-      const tecnico = await pool.query('SELECT id FROM tecnicos WHERE nombre = $1', [nombreTecnico]);
-      if (tecnico.rowCount === 0) {
-        return res.status(400).json({ error: `Técnico no encontrado: ${nombreTecnico}` });
-      }
-    }
-
-    // Actualizar incidente
-    await pool.query(
-      `UPDATE incidentes 
-       SET fecha = $1, ubicacion = $2, tipo = $3, causa = $4, gravedad = $5, estado = $6
-       WHERE id = $7`,
-      [fecha, ubicacion, tipo, causa, gravedad, estado, id]
-    );
-
-    // Actualizar robots
-    await pool.query('DELETE FROM incidentes_robots WHERE incidente_id = $1', [id]);
-    for (const nombreRobot of robots) {
-      const robot = await pool.query('SELECT id FROM robots WHERE nombre = $1', [nombreRobot]);
-      await pool.query(
-        'INSERT INTO incidentes_robots (incidente_id, robot_id) VALUES ($1, $2)',
-        [id, robot.rows[0].id]
-      );
-    }
-
-    // Actualizar técnicos
-    await pool.query('DELETE FROM incidentes_tecnicos WHERE incidente_id = $1', [id]);
-    for (const nombreTecnico of tecnicos || []) {
-      const tecnico = await pool.query('SELECT id FROM tecnicos WHERE nombre = $1', [nombreTecnico]);
-      await pool.query(
-        'INSERT INTO incidentes_tecnicos (incidente_id, tecnico_id) VALUES ($1, $2)',
-        [id, tecnico.rows[0].id]
-      );
-    }
-
-    res.json({ mensaje: 'Incidente actualizado' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al actualizar incidente' });
-  }
-});
-
-// Eliminar incidente
-router.delete('/:id', async (req, res) => {
-  const id = req.params.id;
-
-  try {
-    await pool.query('DELETE FROM incidentes WHERE id = $1', [id]);
-    res.json({ mensaje: 'Incidente eliminado' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Error al eliminar incidente' });
-  }
-});
-
-module.exports = router;*/

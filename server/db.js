@@ -1,5 +1,6 @@
 const { Pool } = require('pg');
 const { DefaultAzureCredential } = require('@azure/identity');
+require('dotenv').config();
 
 async function getAzureToken() {
   const credential = new DefaultAzureCredential();
@@ -13,10 +14,10 @@ async function initializePool() {
   const accessToken = await getAzureToken();
   
   pool = new Pool({
-    host: 'logisticabasedatos.postgres.database.azure.com',
-    user: 'rodolfo.osorio@usm.cl',
-    database: 'postgres',
-    port: 5432,
+    host: process.env.DB_HOST, // Leído desde .env
+    user: process.env.DB_USER, // Leído desde .env
+    database: process.env.DB_NAME, // Leído desde .env
+    port: parseInt(process.env.DB_PORT, 10), // Leído desde .env y convertido a número
     password: accessToken,
     ssl: {
       rejectUnauthorized: false
