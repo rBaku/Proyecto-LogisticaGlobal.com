@@ -2,20 +2,24 @@ const { Pool } = require('pg');
 const { DefaultAzureCredential } = require('@azure/identity');
 require('dotenv').config();
 
+async function getAzureToken() {
+  const credential = new DefaultAzureCredential();
+  const token = await credential.getToken('https://ossrdbms-aad.database.windows.net');
+  return token.token;
+}
+
 let pool;
-let mailUser='jorge.morenot@sansano.usm.cl'
 
 async function initializePool() {
 
-  const credential = new DefaultAzureCredential();
-  const token = await credential.getToken("https://ossrdbms-aad.database.windows.net/.default");
+  const accessToken = await getAzureToken();
   
   pool = new Pool({
-    host: 'logisticabasedatos.postgres.database.azure.com',
-    user: mailUser,
-    database: 'postgres',
-    port: 5432,
-    password: token.token,
+    host: process.env.DB_HOST, // Leído desde .env
+    user: process.env.DB_USER, // Leído desde .env
+    database: process.env.DB_NAME, // Leído desde .env
+    port: parseInt(process.env.DB_PORT, 10), // Leído desde .env y convertido a número
+    password: accessToken,
     ssl: {
       rejectUnauthorized: false,
     },
