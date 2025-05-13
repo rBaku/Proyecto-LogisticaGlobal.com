@@ -46,35 +46,35 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 El codigo se subio a Github para coordinar el avance colaborativo del código, como se ve en la imagen.
 
-![github](images/github.png)
+![github](imagenes/github.png)
 
 Se manejan las ramas en base a Gitflow, con ramas main, develop y features.
 
-![ramas github](images/branches.png)
+![ramas github](imagenes/branches.png)
 
 Ejemplos del código para la entrega 1 de la asignatura de Pruebas de Software, backend y frontend.
 
-![backend](images/server.png)
+![backend](imagenes/server.png)
 
-![frontend](images/app.png)
+![frontend](imagenes/app.png)
 
 Se integro junto a github distintas herramientas para el apoyo del equipo y la coordinación en el desarrollo del proyecto, como se muestra a continuación:
 
 1. **Slack**: Se integro un bot que avisa de la creación de ramas, cuando se realiza un push o pull en Github. Además también se integro con Jira, como se ve en las siguientes imagenes.
 
-![slack-github](images/slack-github.png)
+![slack-github](imagenes/slack-github.PNG)
 
-![slack-jira](images/slack-jira.png)
+![slack-jira](imagenes/slack-jira.png)
 
 2. **Jira**: Se crea un equipo de Jira para manejar las tareas a realizar durante el proyecto, para coordinar el equipo y realizar avances. Como se ve en las imagenes, se utiliza Kanban para gestionar las tareas y se priorizan según la urgencia para el proyecto.
 
-![Kanban](images/kanban.png)
+![Kanban](imagenes/kanban.png)
 
-![Tablero de priorizacion](images/tablero.png)
+![Tablero de priorizacion](imagenes/tablero.png)
 
 3. **Correo electrónico**: Para tener otro canal de información sobre los avances realizados por el equipo en Github, se configuró que los push realizados envíen un correo, lo que permite inmediatamente acceder al repositorio.
 
-![Correo](images/correo.png)
+![Correo](imagenes/correo.png)
 
 ## Estrategias de pruebas (metodología, tipo de pruebas, pruebas de Frontend, Backend, herramientas empleadas y cobertura de pruebas)
 
