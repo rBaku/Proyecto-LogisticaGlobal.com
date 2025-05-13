@@ -46,35 +46,35 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 El codigo se subio a Github para coordinar el avance colaborativo del código, como se ve en la imagen.
 
-![github](images/github.jpg)
+![github](images/github.png)
 
 Se manejan las ramas en base a Gitflow, con ramas main, develop y features.
 
-![ramas github](images/branches.jpg)
+![ramas github](images/branches.png)
 
 Ejemplos del código para la entrega 1 de la asignatura de Pruebas de Software, backend y frontend.
 
-![backend](images/server.jpg)
+![backend](images/server.png)
 
-![frontend](images/app.jpg)
+![frontend](images/app.png)
 
 Se integro junto a github distintas herramientas para el apoyo del equipo y la coordinación en el desarrollo del proyecto, como se muestra a continuación:
 
 1. **Slack**: Se integro un bot que avisa de la creación de ramas, cuando se realiza un push o pull en Github. Además también se integro con Jira, como se ve en las siguientes imagenes.
 
-![slack-github](images/slack-github.jpg)
+![slack-github](images/slack-github.png)
 
-![slack-jira](images/slack-jira.jpg)
+![slack-jira](images/slack-jira.png)
 
 2. **Jira**: Se crea un equipo de Jira para manejar las tareas a realizar durante el proyecto, para coordinar el equipo y realizar avances. Como se ve en las imagenes, se utiliza Kanban para gestionar las tareas y se priorizan según la urgencia para el proyecto.
 
-![Kanban](images/kanban.jpg)
+![Kanban](images/kanban.png)
 
-![Tablero de priorizacion](images/tablero.jpg)
+![Tablero de priorizacion](images/tablero.png)
 
 3. **Correo electrónico**: Para tener otro canal de información sobre los avances realizados por el equipo en Github, se configuró que los push realizados envíen un correo, lo que permite inmediatamente acceder al repositorio.
 
-![Correo](images/correo.jpg)
+![Correo](images/correo.png)
 
 ## Estrategias de pruebas (metodología, tipo de pruebas, pruebas de Frontend, Backend, herramientas empleadas y cobertura de pruebas)
 
@@ -96,6 +96,6 @@ Se integro junto a github distintas herramientas para el apoyo del equipo y la c
 
 4. Se debe configurar un archivo .env que tenga la información para conectarse a la base de datos (nube).
 
-![env](imagenes/env.jpg)
+![env](imagenes/env.png)
 
 5. Utilizar **npm start** en las carpetas de server y cliente, al igual que cuando se instalaron las dependencias, para que empiece a funcionar el backend y frontend, correspondientemente.
