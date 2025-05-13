@@ -8,7 +8,7 @@ El sistema busca ser capaz de guardar y eliminar las incidencias, revisar y filt
 
 Aunque la empresa le gustaría tener un panel administrativo para gestionar las cuentas, se ha considerado que no es de lo más importante en el sistema, por lo que probablemente no se llegará a realizar, de forma similar, es posible que no se llegue a realizar pruebas sobre el uso del sistema en diversos dispositivos.
 
-## Descripción de lo realizado (agregar descripciones con version final del sistema, debe ser resumido y que tenga un enlace a una explicación mas detallada en Wiki)
+## Descripción de lo realizado
 
 Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la wiki.
 
@@ -30,7 +30,7 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 - *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más tecnicos que se revisen los robots que estuvieron involucrados, por ello se creo una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
 
-## Tecnologías usadas (agregar explicación de relación con pruebas)
+## Tecnologías usadas
 
 - *Backend*: Para el backend del sistema, se uso node.js y express, tecnologías de javascript utilizadas para el desarrollo del sistema web, express se utilizó especialmente en la creación de las APIs, para comunicar el sistema y la base de datos que guardaba la información de los trabajadores, robots e incidencias.
 
@@ -42,7 +42,7 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 - *Testing*: Para realizar las pruebas del sistema, se utiliza Mocha/Chai, una herramienta de pruebas de Javascript, en especial útil para probar Node.js.
 
-## Evidencias del trabajo (capturas de codigo, pruebas y plataformas)
+## Evidencias del trabajo
 
 El codigo se subio a Github para coordinar el avance colaborativo del código, como se ve en la imagen.
 
@@ -75,8 +75,6 @@ Se integro junto a github distintas herramientas para el apoyo del equipo y la c
 3. **Correo electrónico**: Para tener otro canal de información sobre los avances realizados por el equipo en Github, se configuró que los push realizados envíen un correo, lo que permite inmediatamente acceder al repositorio.
 
 ![Correo](imagenes/correo.PNG)
-
-## Estrategias de pruebas (metodología, tipo de pruebas, pruebas de Frontend, Backend, herramientas empleadas y cobertura de pruebas)
 
 ## Supuestos y dependencias
 
