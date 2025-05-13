@@ -94,8 +94,14 @@ Se integro junto a github distintas herramientas para el apoyo del equipo y la c
 
 3. Se debe configurar la cuenta de Microsoft Azure en un equipo con azure cli, para habilitar la nube.
 
-4. Se debe configurar un archivo .env que tenga la información para conectarse a la base de datos (nube).
+4. Se debe configurar un archivo .env que tenga la información para conectarse a la base de datos (nube). Los datos a configurar son:
 
-![env](imagenes/env.PNG)
+- *DB_HOST*: El host de la base de datos Microsoft Azure.
+
+- *DB_USER*: El usuario que tiene acceso a la base de datos, puede ser un correo electrónico.
+
+- *DB_NAME*: Nombre de la base de datos de la nube.
+  
+- *DB_PORT*: Puerto a donde accede el sistema a la base de datos.
 
 5. Utilizar **npm start** en las carpetas de server y cliente, al igual que cuando se instalaron las dependencias, para que empiece a funcionar el backend y frontend, correspondientemente.
