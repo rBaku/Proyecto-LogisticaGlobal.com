@@ -10,7 +10,7 @@ Aunque la empresa le gustaría tener un panel administrativo para gestionar las 
 
 ## Descripción de lo realizado (agregar descripciones con version final del sistema, debe ser resumido y que tenga un enlace a una explicación mas detallada en Wiki)
 
-Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema
+Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la wiki.
 
 - *Página inicial*: Una página a la que se es dirigido al iniciar el sistema, desde aqui se puede acceder al estado de los robots, la creación de una incidencia y la lista de incidencias.
 
@@ -44,6 +44,38 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 ## Evidencias del trabajo (capturas de codigo, pruebas y plataformas)
 
+El codigo se subio a Github para coordinar el avance colaborativo del código, como se ve en la imagen.
+
+![github](images/github.jpg)
+
+Se manejan las ramas en base a Gitflow, con ramas main, develop y features.
+
+![ramas github](images/branches.jpg)
+
+Ejemplos del código para la entrega 1 de la asignatura de Pruebas de Software, backend y frontend.
+
+![backend](images/server.jpg)
+
+![frontend](images/app.jpg)
+
+Se integro junto a github distintas herramientas para el apoyo del equipo y la coordinación en el desarrollo del proyecto, como se muestra a continuación:
+
+1. **Slack**: Se integro un bot que avisa de la creación de ramas, cuando se realiza un push o pull en Github. Además también se integro con Jira, como se ve en las siguientes imagenes.
+
+![slack-github](images/slack-github.jpg)
+
+![slack-jira](images/slack-jira.jpg)
+
+2. **Jira**: Se crea un equipo de Jira para manejar las tareas a realizar durante el proyecto, para coordinar el equipo y realizar avances. Como se ve en las imagenes, se utiliza Kanban para gestionar las tareas y se priorizan según la urgencia para el proyecto.
+
+![Kanban](images/kanban.jpg)
+
+![Tablero de priorizacion](images/tablero.jpg)
+
+3. **Correo electrónico**: Para tener otro canal de información sobre los avances realizados por el equipo en Github, se configuró que los push realizados envíen un correo, lo que permite inmediatamente acceder al repositorio.
+
+![Correo](images/correo.jpg)
+
 ## Estrategias de pruebas (metodología, tipo de pruebas, pruebas de Frontend, Backend, herramientas empleadas y cobertura de pruebas)
 
 ## Supuestos y dependencias
@@ -60,4 +92,10 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 2. Acceder desde la terminal de linea de comandos a las carpetas del server y cliente (por ej: *cd cliente*) y escribir el comando *npm install*, lo que hará que se descarguen las dependencias utilizadas en el sistema. **Importante: Se debe tener descargado Node.js para realizar esto, para descargar Node.js: [Instrucciones Descarga](https://nodejs.org/en/download)**.
 
-3. 
+3. Se debe configurar la cuenta de Microsoft Azure en un equipo con azure cli, para habilitar la nube.
+
+4. Se debe configurar un archivo .env que tenga la información para conectarse a la base de datos (nube).
+
+![env](imagenes/env.jpg)
+
+5. Utilizar **npm start** en las carpetas de server y cliente, al igual que cuando se instalaron las dependencias, para que empiece a funcionar el backend y frontend, correspondientemente.
