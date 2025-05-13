@@ -101,6 +101,8 @@ Se integro junto a github distintas herramientas para el apoyo del equipo y la c
 - *DB_USER*: El usuario que tiene acceso a la base de datos, puede ser un correo electrónico.
 
 - *DB_NAME*: Nombre de la base de datos de la nube.
+## Documentacion De pruebas
+- Se creo el documento siguiente, el cual contiene la metodologia de pruebas, resultados esperados y obtenidos tanto del Frontend como del Backend. Este se encuentra en el siguiente link: https://usmcl-my.sharepoint.com/:w:/g/personal/andres_saldiass_usm_cl/EYrGcR5v3ghHtDwJL9IgaCkBCw4f6tbPU4bSFl4wXoow1g?e=uZwyWI
   
 - *DB_PORT*: Puerto a donde accede el sistema a la base de datos.
 
