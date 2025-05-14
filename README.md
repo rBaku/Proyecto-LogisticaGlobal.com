@@ -10,11 +10,11 @@ Aunque la empresa le gustaría tener un panel administrativo para gestionar las 
 
 ## Descripción de lo realizado
 
-Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la wiki. [Wiki Home](../../wiki)
+Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la [wiki](../../wiki).
 
-- *Página inicial*: Una página a la que se es dirigido al iniciar el sistema, desde aqui se puede acceder al estado de los robots, la creación de una incidencia y la lista de incidencias.
+- *Página inicial*: Una [página](../../wiki/Página-inicial) a la que se es dirigido al iniciar el sistema, desde aqui se puede acceder al estado de los robots, la creación de una incidencia y la lista de incidencias.
 
-- *Manejo de las incidencias*: Para el proceso de las incidencias, se tienen las siguientes formas de interactuar con el sistema:
+- *Manejo de las incidencias*: Para el proceso de las [incidencias](../../wiki/Incidencias-de-robots), se tienen las siguientes formas de interactuar con el sistema:
 
 1. Creación de una incidencia: Para la creación de la incidencia, se tiene una pagina que se accede desde la página inicial, esta es vista por el supervisor y permite crear una incidencia nueva con 1 o más robots asociados, si hay más de uno, se crean varias incidencias en el sistema.
 
@@ -26,9 +26,9 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 5. Eliminar una incidencia: De igual manera que los dos casos anteriores, en la lista de incidencias se da la opción de eliminar cada una de estas, al presionar el icono se eliminará permanentemente del sistema.
   
-- *Manejo de los robots*: Dentro de la empresa, una parte fundamental son los robots, dentro del sistema se guardan los robots para que sean facilmente accesibles al crear una incidencia, por lo que se tiene una página que es accesible desde la página inicial. Esta página despliega la lista de los robots guardados actualmente en el sistema, donde también se pueden eliminar estos robots y crear nuevos para ser guardados en el sistema.
+- *Manejo de los robots*: Dentro de la empresa, una parte fundamental son los [robots](../../wiki/Robots-de-la-empresa), dentro del sistema se guardan los robots para que sean facilmente accesibles al crear una incidencia, por lo que se tiene una página que es accesible desde la página inicial. Esta página despliega la lista de los robots guardados actualmente en el sistema, donde también se pueden eliminar estos robots y crear nuevos para ser guardados en el sistema.
 
-- *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más tecnicos que se revisen los robots que estuvieron involucrados, por ello se creo una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
+- *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más [técnicos](../../wiki/Vista-de-técnicos) que se revisen los robots que estuvieron involucrados, por ello se creo una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
 
 ## Tecnologías usadas
 
