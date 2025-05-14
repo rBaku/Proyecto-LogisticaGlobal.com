@@ -11,19 +11,28 @@ router.post('/', async (req, res, next) => {
   }
 
   try {
+    // Verificar si el ID ya existe
+    const checkQuery = 'SELECT id FROM Robots WHERE id = $1';
+    const checkResult = await pool.query(checkQuery, [id]);
+
+    if (checkResult.rows.length > 0) {
+      return res.status(409).json({ error: 'Conflicto: Ya existe un robot con ese ID.' });
+    }
+
+    // Si no existe, insertar el nuevo robot
     const queryText = `
       INSERT INTO Robots (id, name, is_operational) 
-      VALUES ($1, $2, $3)
-      RETURNING *;`;
+      VALUES ($1, $2, $3) 
+      RETURNING *;
+    `;
     const values = [id, name, is_operational];
     const result = await pool.query(queryText, values);
     res.status(201).json(result.rows[0]);
+
   } catch (error) {
+    // Solo mostrar en consola si es un error inesperado
     console.error('Error en POST /api/robots:', error);
-    if (error.code === '23505') { // Error de violación de unicidad (ej. id o name duplicado)
-        return res.status(409).json({ error: 'Conflicto: Ya existe un robot con ese ID o nombre.' });
-    }
-    next(error);
+    next(error); // Pasa el error al manejador de errores
   }
 });
 
@@ -45,7 +54,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const result = await pool.query('SELECT id, name, is_operational FROM Robots WHERE id = $1', [id]);
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Robot no encontrado.' });
+      return res.status(404).json({ error: 'Robot no encontrado.' });
     }
     res.json(result.rows[0]);
   } catch (error) {
@@ -98,7 +107,7 @@ router.put('/:id', async (req, res, next) => {
     const result = await pool.query(queryText, values);
 
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Robot no encontrado para actualizar.' });
+      return res.status(404).json({ error: 'Robot no encontrado.' });
     }
     res.json(result.rows[0]);
   } catch (error) {
@@ -116,9 +125,9 @@ router.delete('/:id', async (req, res, next) => {
   try {
     const result = await pool.query('DELETE FROM Robots WHERE id = $1 RETURNING id', [id]);
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Robot no encontrado para eliminar.' });
+      return res.status(404).json({ error: 'Robot no encontrado.' });
     }
-    res.status(200).json({ message: 'Robot eliminado exitosamente.', id: result.rows[0].id});
+    return res.status(204).send();
   } catch (error) {
     console.error(`Error en DELETE /api/robots/${id}:`, error);
     if (error.code === '23503') { // Error de FK, el robot está referenciado en Incidents
