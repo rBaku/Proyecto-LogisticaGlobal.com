@@ -10,7 +10,7 @@ Aunque la empresa le gustaría tener un panel administrativo para gestionar las 
 
 ## Descripción de lo realizado
 
-Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la wiki. ![Wiki Home](../../wiki)
+Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la wiki. [Wiki Home](../../wiki)
 
 - *Página inicial*: Una página a la que se es dirigido al iniciar el sistema, desde aqui se puede acceder al estado de los robots, la creación de una incidencia y la lista de incidencias.
 
