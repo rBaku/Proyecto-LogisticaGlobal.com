@@ -38,7 +38,7 @@ describe('API /api/incidentes (Integración)', () => {
     )
     VALUES (
       gen_random_uuid(), 'INC-Test-001', 'RBT-TestGet1', '2024-01-01T10:00:00Z', 'Zona A',
-      'Error mecánico', 'Desgaste de pieza', 'TECH-001', 5, 'Creado'
+      'Error mecánico', 'Desgaste de pieza', 'TECH-Test', 5, 'Creado'
     );
   `);
 
