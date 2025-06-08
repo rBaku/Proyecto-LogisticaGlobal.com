@@ -1,10 +1,15 @@
 # Proyecto-LogisticaGlobal.com
-Proyecto de Asignatura Pruebas de Software (IN-331), Universidad Técnica Federico Santa María. Proyecto realizado por el grupo 8, desarrollado por Jorge Moreno, Andres Saldias, Rolando Rojas, Rodolfo Osorio y Cristóbal Pérez.
+Proyecto de Asignatura Pruebas de Software (IN-331), Universidad Técnica Federico Santa María. Proyecto realizado por el grupo 8, desarrollado por:
+- [Jorge Moreno](https://github.com/SSJorge)
+- [Andres Saldias](https://github.com/Mickxz)
+- [Rolando Rojas](https://github.com/re-rojas)
+- [Rodolfo Osorio](https://github.com/rBaku)
+- [Cristóbal Pérez](https://github.com/cristobalP02)
 
 ### Link al video: https://youtu.be/0UcnRony0kU
 
 ## Objetivos, Alcances y Propósito
-Se crea un sistema de registro de incidencias relacionadas a los accidentes de robots que ocurren en una fábrica, creado para mejorar la eficiencia, simplificar y optimizar el proceso que actualmente utiliza la **LogísticaGlobal.com**. Dicho proceso es manual, se realiza en varias etapas por distintos empleados y resulta engorroso, dificultando la operatividad de los almacenes, especialmente para los supervisores de operaciones.
+Se crea un sistema de registro de incidencias relacionadas a los accidentes de robots que ocurren en una fábrica, creado para mejorar la eficiencia, simplificar y optimizar el proceso que actualmente utiliza la **[LogísticaGlobal.com](https://github.com/Pruebas-de-Software/HandsOnProject/blob/main/semestres/2025-1/logisticaglobal.md)**. Dicho proceso es manual, se realiza en varias etapas por distintos empleados y resulta engorroso, dificultando la operatividad de los almacenes, especialmente para los supervisores de operaciones.
 
 El sistema busca ser capaz de guardar y eliminar las incidencias, revisar y filtrar las incidencias guardadas, permitir modificar las incidencias en cada etapa que se maneja actualmente, solo permitiendo al usuario indicado modificar las incidencias en la etapa que le corresponde. Además, el sistema apoyara la creación del reporte mensual que actualmente realiza el supervisor.
 
