@@ -25,6 +25,8 @@ const navItems = [
   { text: 'Ver Incidentes', path: '/incidentes' },
   { text: 'Estado Robots', path: '/robots-estado' },
   { text: 'Vista Técnico', path: '/tecnico/incidentes' },
+  { text: 'Login', path: '/login' },
+  { text: 'Cerrar sesión', path: '/login/logout' },
 ];
 
 function Navbar() {
