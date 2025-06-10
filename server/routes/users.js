@@ -4,36 +4,17 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
-const JWT_SECRET = process.env.JWT_SECRET;
 const authMiddleware = require('../middleware/auth');
+const onlyAdmin = require('../middleware/onlyAdmin');
 
-async function crearHash() {
+/*async function crearHash() {
   const hashed = await bcrypt.hash('miclave123', 10);
   console.log('Hash generado:', hashed);
 }
-crearHash();
-
-/*
-router.get('/', (req, res) => {
-  res.send('<h1>HOLAAAAA</h1>')
-});
-router.post('/', (req, res)=>{
-    res.json({user: 'jorge'})
-});
-router.post('/login', (req, res) => {
-  console.log('Petición recibida en /api/login/login');
-  console.log('Body:', req.body);
-  res.json({ user: 'jorge' });
-});
-router.post('/register', (req, res)=>{
-});
-router.post('/logout', (req, res)=>{
-});
-router.post('/protected', (req, res)=>{
-});*/
+crearHash();*/
 
 // POST /api/users - Crear un nuevo usuario
-router.post('/', async (req, res, next) => {
+router.post('/', authMiddleware, onlyAdmin, async (req, res, next) => {
   const { username, email, password, role } = req.body;
 
   if (!username || !email || !password) {
@@ -66,7 +47,7 @@ router.post('/', async (req, res, next) => {
 });
 
 // GET /api/users - Obtener todos los usuarios
-router.get('/', authMiddleware, async (_req, res, next) => {
+router.get('/', authMiddleware, onlyAdmin, async (_req, res, next) => {
   console.log(_req.user); // Esto sí mostrará el usuario
   try {
     const result = await pool.query('SELECT id, username, email, role FROM users ORDER BY id;');
@@ -76,38 +57,9 @@ router.get('/', authMiddleware, async (_req, res, next) => {
     next(error);
   }
 });
-/*
-router.get('/', async (_req, res, next) => {
-  const { user } = _req.session
-    if(!user) {
-      console.log("AAAAAAAA")
-      console.log(user)
-      return res.status(403).send("Acceso no autorizado")}
-  const token = _req.cookies.access_token
-  if (!token){
-    console.log("BBBBBBBBBBBB")
-    return res.status(403).send('Acceso no autorizado')
-  }
-  try {
-    const data = jwt.verify(token,JWT_SECRET)
-    console.log("VVVV")
-    console.log(data)
 
-  } catch(error){
-    console.log("CCCC")
-    res.status(401).send('Acceso no autorizado')
-  }
-  try {
-    const result = await pool.query('SELECT id, username, email, role FROM users ORDER BY id;');
-    res.json(result.rows);
-  } catch (error) {
-    console.error('Error en GET /api/users:', error);
-    next(error);
-  }
-});
-*/
 // GET /api/users/:id - Obtener un usuario por ID
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authMiddleware, onlyAdmin,async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT id, username, email, role FROM users WHERE id = $1', [id]);
@@ -122,7 +74,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // PUT /api/users/:id - Actualizar un usuario
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', authMiddleware, onlyAdmin,async (req, res, next) => {
   const { id } = req.params;
   const { username, email, password, role } = req.body;
 
@@ -178,7 +130,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/users/:id - Eliminar un usuario
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', authMiddleware, onlyAdmin,async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);

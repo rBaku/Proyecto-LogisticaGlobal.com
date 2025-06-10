@@ -3,14 +3,20 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Typography, Paper, Box, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, IconButton, Tooltip,
-  Snackbar, Alert, CircularProgress
+  Snackbar, Alert, CircularProgress, Button, Dialog, DialogActions,
+  DialogContent, DialogTitle, TextField
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 
 function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'user' });
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -52,6 +58,43 @@ function AdminUsersPage() {
     }
   };
 
+  const handleOpenDialog = (user = null) => {
+    setEditingUser(user);
+    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: 'user' });
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingUser(null);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    const method = editingUser ? 'PUT' : 'POST';
+    const url = editingUser ? `http://localhost:3001/api/users/${editingUser.id}` : 'http://localhost:3001/api/users';
+
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+        credentials: 'include'
+      });
+      if (!res.ok) throw new Error('Error al guardar el usuario');
+      showSnackbar(editingUser ? 'Usuario actualizado.' : 'Usuario creado.');
+      handleCloseDialog();
+      fetchUsers();
+    } catch (err) {
+      console.error(err);
+      showSnackbar(err.message || 'Error al guardar el usuario', 'error');
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -60,6 +103,9 @@ function AdminUsersPage() {
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
         <Typography variant="h4">Panel de Administración - Usuarios</Typography>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleOpenDialog()}>
+          Nuevo Usuario
+        </Button>
       </Box>
 
       {isLoading ? (
@@ -86,6 +132,11 @@ function AdminUsersPage() {
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.role}</TableCell>
                       <TableCell align="center">
+                        <Tooltip title="Editar Usuario">
+                          <IconButton color="primary" onClick={() => handleOpenDialog(user)}>
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
                         <Tooltip title="Eliminar Usuario">
                           <IconButton color="error" onClick={() => handleDeleteUser(user.id, user.username)}>
                             <DeleteIcon />
@@ -104,6 +155,20 @@ function AdminUsersPage() {
           </TableContainer>
         </Paper>
       )}
+
+      <Dialog open={dialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
+        <DialogTitle>{editingUser ? 'Editar Usuario' : 'Crear Usuario'}</DialogTitle>
+        <DialogContent>
+          <TextField fullWidth margin="dense" label="Username" name="username" value={form.username} onChange={handleChange} />
+          <TextField fullWidth margin="dense" label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+          <TextField fullWidth margin="dense" label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
+          <TextField fullWidth margin="dense" label="Rol" name="role" value={form.role} onChange={handleChange} />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDialog}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSubmit}>Guardar</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={handleCloseSnackbar}>
         <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} variant="filled">

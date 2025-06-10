@@ -69,7 +69,6 @@ router.post('/login', async (req, res, next) => {
   }
 });
 router.post('/logout',(req,res)=>{
-  console.log("logout")
     res
         .clearCookie('access_token')
         .json({message: 'Logout seccesful'})
