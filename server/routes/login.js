@@ -46,11 +46,6 @@ router.post('/login', async (req, res, next) => {
       { expiresIn: '1h' }
     );
 
-    res.json({
-      user: userWithoutPassword,
-      token,
-      role: user.role
-    });
 
     // Setear la cookie (segura en producción)
     res.cookie('access_token', token, {
@@ -59,6 +54,14 @@ router.post('/login', async (req, res, next) => {
       //sameSite: 'Strict', //la cookie solo se puede acceder en el mismo dominio
       maxAge: 1 * 60 * 60 * 1000, // 2 horas
     });
+
+
+    res.json({
+      user: userWithoutPassword,
+      token,
+      role: user.role
+    });
+
 
   } catch (error) {
     console.error('Error en POST /login:', error);
@@ -77,7 +80,15 @@ router.get('/protected', (req, res)=>{
         res.status(401).send('Acceso no autorizado')
     }
 })
+router.get('/protected2', (req, res)=>{
+    const { user } = req.session
+    if(!user) {
+      console.timeLog("AAAAAAAA")
+      console.log(user)
+      return res.statu(403).send("Acceso no autorizado")}
+})
 router.post('/logout',(req,res)=>{
+  console.log("logout")
     res
         .clearCookie('access_token')
         .json({message: 'Logout seccesful'})

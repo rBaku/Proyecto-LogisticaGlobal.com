@@ -21,15 +21,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookiePaser());
 
-app.use((req,res,next)=>{
-  const token=req.cookies.access_token
-  req.session = {user: null}
-  try{
-    const data = jwt.verify(token, JWT_SECRET)
-    req.session.user=data
-  } catch{}
-  next()
-})
+
 
 
 app.use('/api/incidentes', incidentesRoutes);
@@ -41,3 +33,13 @@ app.use('/api/users', usersRoutes);
 app.listen(3001, () => {
   console.log('Servidor corriendo en el puerto 3001');
 });
+
+/*app.use((req,res,next)=>{
+  const token=req.cookies.access_token
+  req.session = {user: null}
+  try{
+    const data = jwt.verify(token, JWT_SECRET)
+    req.session.user=data
+  } catch{}
+  next()
+})*/

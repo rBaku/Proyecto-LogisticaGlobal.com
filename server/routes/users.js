@@ -4,6 +4,8 @@ const pool = require('../db');
 const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
+const JWT_SECRET = process.env.JWT_SECRET;
+const authMiddleware = require('../middleware/auth');
 
 async function crearHash() {
   const hashed = await bcrypt.hash('miclave123', 10);
@@ -64,7 +66,8 @@ router.post('/', async (req, res, next) => {
 });
 
 // GET /api/users - Obtener todos los usuarios
-router.get('/', async (_req, res, next) => {
+router.get('/', authMiddleware, async (_req, res, next) => {
+  console.log(_req.user); // Esto sí mostrará el usuario
   try {
     const result = await pool.query('SELECT id, username, email, role FROM users ORDER BY id;');
     res.json(result.rows);
@@ -73,7 +76,36 @@ router.get('/', async (_req, res, next) => {
     next(error);
   }
 });
+/*
+router.get('/', async (_req, res, next) => {
+  const { user } = _req.session
+    if(!user) {
+      console.log("AAAAAAAA")
+      console.log(user)
+      return res.status(403).send("Acceso no autorizado")}
+  const token = _req.cookies.access_token
+  if (!token){
+    console.log("BBBBBBBBBBBB")
+    return res.status(403).send('Acceso no autorizado')
+  }
+  try {
+    const data = jwt.verify(token,JWT_SECRET)
+    console.log("VVVV")
+    console.log(data)
 
+  } catch(error){
+    console.log("CCCC")
+    res.status(401).send('Acceso no autorizado')
+  }
+  try {
+    const result = await pool.query('SELECT id, username, email, role FROM users ORDER BY id;');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error en GET /api/users:', error);
+    next(error);
+  }
+});
+*/
 // GET /api/users/:id - Obtener un usuario por ID
 router.get('/:id', async (req, res, next) => {
   const { id } = req.params;
