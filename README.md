@@ -13,7 +13,7 @@ Se crea un sistema de registro de incidencias relacionadas a los accidentes de r
 
 El sistema busca ser capaz de guardar y eliminar las incidencias, revisar y filtrar las incidencias guardadas, permitir modificar las incidencias en cada etapa que se maneja actualmente, solo permitiendo al usuario indicado modificar las incidencias en la etapa que le corresponde. Además, el sistema apoyara la creación del reporte mensual que actualmente realiza el supervisor.
 
-Aunque la empresa le gustaría tener un panel administrativo para gestionar las cuentas, se ha considerado que no es de lo más importante en el sistema, por lo que probablemente no se llegará a realizar, de forma similar, es posible que no se llegue a realizar pruebas sobre el uso del sistema en diversos dispositivos.
+Aunque la empresa le gustaría tener un panel administrativo para gestionar las cuentas, se ha considerado que no es de lo más importante en el sistema, por lo que probablemente no se llegará a realizar, de forma similar, es posible que no se llegue a realizar pruebas sobre el uso del sistema en diversos dispositivos. Además, no se considera priorizar los requisitos no funcionales, pues se desarrollarán principalmente los requisitos funcionales del sistema.
 
 ## Descripción del sistema
 
@@ -56,6 +56,8 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 - *DB_PORT*: Puerto a donde accede el sistema a la base de datos.
 
 5. Utilizar **npm start** en las carpetas de server y cliente, al igual que cuando se instalaron las dependencias, para que empiece a funcionar el backend y frontend, correspondientemente.
+
+6. Acceder a http://localhost:3000/ en el buscador y se accederá al sistema.
 
 ## Documentacion
 
