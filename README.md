@@ -15,7 +15,7 @@ El sistema busca ser capaz de guardar y eliminar las incidencias, revisar y filt
 
 Aunque la empresa le gustaría tener un panel administrativo para gestionar las cuentas, se ha considerado que no es de lo más importante en el sistema, por lo que probablemente no se llegará a realizar, de forma similar, es posible que no se llegue a realizar pruebas sobre el uso del sistema en diversos dispositivos.
 
-## Descripción de lo realizado
+## Descripción del sistema
 
 Descripción de cada vista importante del sistema, considerar que el sistema guarda información, no solo de las incidencias, sino que también de robots y técnicos de la empresa, para más detalles, acceder cuando se mencione cada tema a un enlace a la [wiki](../../wiki).
 
@@ -37,60 +37,6 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 - *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más [técnicos](../../wiki/Vista-de-técnicos) que se revisen los robots que estuvieron involucrados, por ello se creó una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
 
-## Tecnologías usadas
-
-- *Backend*: Para el backend del sistema, se uso node.js y express, tecnologías de javascript utilizadas para el desarrollo del sistema web, express se utilizó especialmente en la creación de las APIs, para comunicar el sistema y la base de datos que guardaba la información de los trabajadores, robots e incidencias.
-
-- *Base de Datos*: La base de datos utilizada para el sistema es postgreSQL, una base de datos relacional, útil para relacionar las incidencias con los trabajadores y robots.
-
-- *Nube*: Se asignó a la pipeline del proyecto, una pipeline de Azure, un servicio de información en la nube de Microsoft.
-
-- *Frontend*: Para el frontend del sistema, se utilizo React, un Framework útil para crear la interfaz del sistema web, utilizado para manejar las rutas de la interfaz del sistema, la creación y edición de las incidencias, el filtro y búsqueda de estas
-
-- *Testing*: Para realizar las pruebas del sistema, se utiliza Mocha/Chai, una herramienta de pruebas de Javascript, en especial útil para probar Node.js.
-
-## Evidencias del trabajo
-
-El codigo se subio a Github para coordinar el avance colaborativo del código, como se ve en la imagen.
-
-![github](imagenes/github.PNG)
-
-Se manejan las ramas en base a Gitflow, con ramas main, develop y features.
-
-![ramas github](imagenes/branches.PNG)
-
-Ejemplos del código para la entrega 1 de la asignatura de Pruebas de Software, backend y frontend.
-
-![backend](imagenes/server.PNG)
-
-![frontend](imagenes/app.PNG)
-
-Se integró junto a github distintas herramientas para el apoyo del equipo y la coordinación en el desarrollo del proyecto, como se muestra a continuación:
-
-1. **Slack**: Se integro un bot que avisa de la creación de ramas, cuando se realiza un push o pull en Github. Además también se integró con Jira, como se ve en las siguientes imagenes.
-
-![slack-github](imagenes/slack-github.PNG)
-
-![slack-jira](imagenes/slack-jira.PNG)
-
-2. **Jira**: Se crea un equipo de Jira para manejar las tareas a realizar durante el proyecto, para coordinar el equipo y realizar avances. Como se ve en las imágenes, se utiliza Kanban para gestionar las tareas y se priorizan según la urgencia para el proyecto.
-
-![Kanban](imagenes/kanban.PNG)
-
-![Tablero de priorizacion](imagenes/tablero.PNG)
-
-3. **Correo electrónico**: Para tener otro canal de información sobre los avances realizados por el equipo en Github, se configuró que los push realizados envíen un correo, lo que permite inmediatamente acceder al repositorio.
-
-![Correo](imagenes/correo.PNG)
-
-## Supuestos y dependencias
-
-- Uno de los supuestos considerados, es que al crear una incidencia, si hay más de un robot involucrado, se creará más de una incidencia en el sistema, esto para actualizar el estado de cada robot de forma individual en las etapas posteriores del proceso. Se mantiene un mismo ID de incidencia para asociar a los robots en el mismo accidente, solo en el sistema se guarda de forma distinta.
-
-- Se consideró guardar datos sobre robots y técnicos, esto para facilitar el acceso a estos datos en diferentes instancias. Por ejemplo, el ID de los robots son utilizados al crear una incidencia, pues al intentar asignar robots, se despliega una lista con los IDs guardados en el sistema; de mismo modo, los técnicos guardados pueden ser accedidos cuando un supervisor quiere asignar técnicos mientras edita una incidencia, la primera vez que la revisa.
-
-- Se tienen dependencias de las tecnologías mencionadas anteriormente, además de los módulos utilizados y que son instalados al seguir las instrucciones de instalación.
-
 ## Instrucciones de instalación
 
 1. Descargar el repositorio de la rama main.
@@ -111,7 +57,14 @@ Se integró junto a github distintas herramientas para el apoyo del equipo y la 
 
 5. Utilizar **npm start** en las carpetas de server y cliente, al igual que cuando se instalaron las dependencias, para que empiece a funcionar el backend y frontend, correspondientemente.
 
-## Documentacion De pruebas
-- Se creó el documento siguiente, el cual contiene la metodología de pruebas, resultados esperados y obtenidos tanto del Frontend como del Backend. Este se encuentra en el siguiente link: https://usmcl-my.sharepoint.com/:w:/g/personal/andres_saldiass_usm_cl/EYrGcR5v3ghHtDwJL9IgaCkBCw4f6tbPU4bSFl4wXoow1g?e=uZwyWI
-  
+## Documentacion
 
+Para acceder a documentación que complementa y describe el proceso realizado para crear el proyecto se encuentra en la [Wiki](../../wiki). Algunos enlaces de interes pueden ser:
+
+- Las [tecnologías](../../wiki/Tecnologias-usadas-en-el-proyecto) que se usan en el sistema y las pruebas que se pueden realizar en estas.
+
+- Los [supuestos y dependencias](../../wiki/Supuestos-y-Dependencias-del-sistema) que se deben tener en consideración al usar el sistema.
+
+- La documentación de las [pruebas](../../wiki/Pruebas-realizadas) realizadas hasta el momento, tanto para probar el Backend, como el Frontend.
+
+- Imagenes que sirven de [evidencias](../../wiki/Evidencias-del-trabajo-realizado) de los sistemas utilizados para mejorar la comunicación del equipo y facilitar el proceso de desarrollo, además de mostrar partes del código desarrollado para las entregas.
