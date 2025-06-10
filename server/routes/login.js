@@ -4,7 +4,7 @@ const pool = require('../db');
 const router = express.Router(); 
 const jwt = require('jsonwebtoken');
 
-//  LA CONTRASEÑA DE TODOS ES miclave123
+//  LA CONTRASEÑA DE TODOS ES miclave123, admin, tecnico y supervisor
 
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -68,6 +68,12 @@ router.post('/login', async (req, res, next) => {
     next(error);
   }
 });
+router.post('/logout',(req,res)=>{
+  console.log("logout")
+    res
+        .clearCookie('access_token')
+        .json({message: 'Logout seccesful'})
+})
 router.get('/protected', (req, res)=>{
     const token = req.cookies.access_token
     if (!token){
@@ -87,11 +93,6 @@ router.get('/protected2', (req, res)=>{
       console.log(user)
       return res.statu(403).send("Acceso no autorizado")}
 })
-router.post('/logout',(req,res)=>{
-  console.log("logout")
-    res
-        .clearCookie('access_token')
-        .json({message: 'Logout seccesful'})
-})
+
 
 module.exports = router;
