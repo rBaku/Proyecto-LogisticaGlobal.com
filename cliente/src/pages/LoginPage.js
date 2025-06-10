@@ -50,13 +50,13 @@ function LoginPage() {
       // Redirección basada en el rol
       switch (role) {
         case 'admin':
-          navigate('/incidentes');
+          navigate('/');
           break;
         case 'supervisor':
-          navigate('/robots-estado');
+          navigate('/');
           break;
         case 'tecnico':
-          navigate('/tecnico/incidentes');
+          navigate('/');
           break;
         default:
           navigate('/');
