@@ -24,7 +24,7 @@ function IncidentForm({ onResult }) {
   const [location, setLocation] = useState('');
   const [type, setType] = useState('');
   const [cause, setCause] = useState('');
-  const [assigned_technician_id, setAssignedTechnicianId] = useState('');
+  const [assignedTechnicians, setAssignedTechnicians] = useState([]);
 
   const [formError, setFormError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -96,8 +96,8 @@ function IncidentForm({ onResult }) {
       setIsLoading(false);
       return;
     }
-    if (!assigned_technician_id) {
-      setFormError('Debe asignar un técnico al incidente.');
+    if (assignedTechnicians.length === 0) {
+      setFormError('Debe asignar al menos un técnico al incidente.');
       setIsLoading(false);
       return;
     }
@@ -116,7 +116,7 @@ function IncidentForm({ onResult }) {
         location,
         type,
         cause,
-        assigned_technician_id,
+        assigned_technicians: assignedTechnicians.map(t => t.id),
         gravity: null, // Gravedad es null al crear
       };
       console.log('Enviando datos para robot:', robot.id, incidentData);
@@ -165,7 +165,7 @@ function IncidentForm({ onResult }) {
            setLocation('');
            setType('');
            setCause('');
-           setAssignedTechnicianId('');
+           setAssignedTechnicians([]);
         }
       }
     } catch (err) {
@@ -270,23 +270,42 @@ function IncidentForm({ onResult }) {
           </Select>
         </FormControl>
 
-        <FormControl fullWidth required disabled={isLoading || isLoadingTechnicians}>
-          <InputLabel id="technician-select-label">Técnico Asignado</InputLabel>
-          <Select
-            labelId="technician-select-label"
-            id="technician-select"
-            value={assigned_technician_id}
-            label="Técnico Asignado"
-            onChange={(e) => setAssignedTechnicianId(e.target.value)}
-            endAdornment={isLoadingTechnicians ? <CircularProgress color="inherit" size={20} sx={{mr: 2}}/> : null}
-          >
-            {availableTechnicians.map((tech) => (
-              <MenuItem key={tech.id} value={tech.id}>
-                {tech.full_name} {/* API devuelve full_name */}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          multiple
+          id="technicians-autocomplete"
+          options={availableTechnicians}
+          loading={isLoadingTechnicians}
+          getOptionLabel={(option) => option.full_name}
+          value={assignedTechnicians}
+          onChange={(event, newValue) => {
+            setAssignedTechnicians(newValue);
+          }}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="outlined"
+              label="Técnicos Asignados"
+              placeholder="Seleccione técnicos"
+              required
+              InputProps={{
+                ...params.InputProps,
+                endAdornment: (
+                  <>
+                    {isLoadingTechnicians ? <CircularProgress color="inherit" size={20} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+            />
+          )}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip variant="outlined" label={option.full_name} {...getTagProps({ index })} />
+            ))
+          }
+          disabled={isLoading || isLoadingTechnicians}
+        />
 
         <TextField
           label="Causa / Descripción Inicial"

@@ -51,18 +51,21 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
         setFormData({
             ...initialData,
             gravity: initialData?.gravity === "Sin asignar" || initialData?.gravity === undefined ? null : initialData.gravity,
-        });
+            assigned_technicians: (initialData.assigned_technicians || []).map(t => t.id),
+            });
         setFormError('');
     }, [initialData]);
 
     const handleChange = (event) => {
         const { name, value } = event.target;
+
         setFormData(prevData => ({
             ...prevData,
-            [name]: value === "" && name === "gravity" ? null : value,
+            [name]: name === 'gravity' && value === "" ? null :
+                    name === 'assigned_technicians' ? value : // ← CAMBIO
+                    value
         }));
-    };
-
+        };
     const handleInternalFormSubmit = (event) => {
         event.preventDefault();
         setFormError('');
@@ -120,23 +123,32 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
                 />
                 
                 <FormControl fullWidth required disabled={isLoading || isLoadingTechnicians}>
-                    <InputLabel id="technician-edit-label" shrink={!!formData.assigned_technician_id}>Técnico Asignado</InputLabel>
+                    <InputLabel id="technicians-edit-label" shrink={formData.assigned_technicians?.length > 0}>
+                        Técnicos Asignados
+                    </InputLabel>
                     <Select
-                        labelId="technician-edit-label"
-                        name="assigned_technician_id"
-                        value={formData.assigned_technician_id || ''}
-                        label="Técnico Asignado"
+                        labelId="technicians-edit-label"
+                        name="assigned_technicians" // ← CAMBIO
+                        multiple // ← CAMBIO
+                        value={formData.assigned_technicians || []} // ← CAMBIO
+                        label="Técnicos Asignados"
                         onChange={handleChange}
-                        // Se eliminó endAdornment de aquí
+                        renderValue={(selected) =>
+                        selected.map(id => {
+                            const tech = availableTechnicians.find(t => t.id === id);
+                            return tech ? tech.full_name : id;
+                        }).join(', ')
+                        }
                     >
-                        {/* Indicador de carga puede ir cerca o deshabilitar el campo */}
                         {isLoadingTechnicians && <MenuItem disabled><CircularProgress size={20} sx={{ml:1, mr:1}}/>Cargando técnicos...</MenuItem>}
                         {!isLoadingTechnicians && availableTechnicians.length === 0 && <MenuItem disabled>No hay técnicos disponibles</MenuItem>}
                         {availableTechnicians.map((tech) => (
-                            <MenuItem key={tech.id} value={tech.id}>{tech.full_name}</MenuItem>
+                        <MenuItem key={tech.id} value={tech.id}>
+                            {tech.full_name}
+                        </MenuItem>
                         ))}
                     </Select>
-                </FormControl>
+                    </FormControl>
 
                 <FormControl fullWidth required disabled={isLoading}>
                     <InputLabel id="status-edit-label" shrink={!!formData.status}>Estado</InputLabel>

@@ -201,7 +201,7 @@ function TechnicianViewPage() {
                         <TableCell>{incident.type}</TableCell>
                         <TableCell>{incident.status}</TableCell>
                         <TableCell sx={{textAlign: 'center'}}>{displayGravity(incident.gravity)}</TableCell>
-                        <TableCell>{getTechnicianName(incident.assigned_technician_id)}</TableCell>
+                        <TableCell>{getTechnicianName(incident.assigned_technicians)}</TableCell>
                         <TableCell>
                             <Tooltip title={incident.technician_comment || "Sin comentario"}>
                                 <Typography variant="caption" noWrap sx={{maxWidth: '150px', display: 'inline-block'}}>

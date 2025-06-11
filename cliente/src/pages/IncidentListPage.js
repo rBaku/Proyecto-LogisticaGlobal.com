@@ -46,7 +46,7 @@ const filterableColumns = [
   { key: 'gravity', label: 'Gravedad' },
   { key: 'incident_timestamp', label: 'Fecha y Hora' },
   { key: 'cause', label: 'Causa' },
-  { key: 'assigned_technician_id', label: 'ID Técnico Asignado' },
+  { key: 'assigned_technicians', label: 'ID Técnico Asignado' },
   { key: 'technician_comment', label: 'Comentario Técnico' },
 ];
 
@@ -319,7 +319,11 @@ function IncidentListPage() {
                         <TableCell>{incident.type}</TableCell>
                         <TableCell>{incident.status}</TableCell>
                         <TableCell sx={{textAlign: 'center'}}>{displayGravity(incident.gravity)}</TableCell>
-                        <TableCell>{getTechnicianName(incident.assigned_technician_id)}</TableCell>
+                        <TableCell>
+                          {(incident.assigned_technicians || [])
+                            .map(tech => tech.full_name)
+                            .join(', ') || 'N/A'}
+                        </TableCell>
                         <TableCell><Tooltip title={incident.id}><Typography variant="caption" noWrap>{incident.id.substring(0,8)}...</Typography></Tooltip></TableCell>
                         <TableCell align="center">
                             <Tooltip title="Ver Detalles"><IconButton size="small" onClick={() => handleViewDetails(incident.id)}><VisibilityIcon fontSize="inherit" /></IconButton></Tooltip>
@@ -349,7 +353,14 @@ function IncidentListPage() {
                     <Grid item xs={12} sm={6}><Typography variant="subtitle2">Tipo:</Typography><Typography>{selectedIncident.type}</Typography></Grid>
                     <Grid item xs={12} sm={6}><Typography variant="subtitle2">Estado:</Typography><Typography>{selectedIncident.status}</Typography></Grid>
                     <Grid item xs={12} sm={6}><Typography variant="subtitle2">Gravedad:</Typography><Typography>{displayGravity(selectedIncident.gravity)}</Typography></Grid>
-                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Técnico Asignado:</Typography><Typography>{getTechnicianName(selectedIncident.assigned_technician_id)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}>
+                      <Typography variant="subtitle2">Técnicos Asignados:</Typography>
+                      <Typography>
+                        {(selectedIncident.assigned_technicians || [])
+                          .map(tech => tech.full_name)
+                          .join(', ') || 'N/A'}
+                      </Typography>
+                    </Grid>
                     <Grid item xs={12}><Typography variant="subtitle2">Causa Inicial:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || 'N/A'}</Typography></Grid>
                     <Grid item xs={12}><Typography variant="subtitle2">Comentario del Técnico:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.technician_comment || 'N/A'}</Typography></Grid>
                 </Grid>

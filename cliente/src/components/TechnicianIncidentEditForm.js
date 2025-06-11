@@ -31,7 +31,7 @@ function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
             type: initialData?.type || '',
             cause: initialData?.cause || '',
             gravity: initialData?.gravity, // Mostrarla, pero no será editable por el técnico
-            assigned_technician_id: initialData?.assigned_technician_id || '',
+            assigned_technicians: initialData?.assigned_technicians || '',
         });
         setFormError('');
     }, [initialData]);
@@ -92,7 +92,7 @@ function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
                 <TextField label="Tipo" value={formData.type || ''} fullWidth disabled InputLabelProps={{ shrink: true }} />
                 <TextField label="Causa Inicial" value={formData.cause || ''} fullWidth multiline disabled InputLabelProps={{ shrink: true }} />
                 <TextField label="Gravedad Asignada" value={displayGravity(formData.gravity)} fullWidth disabled InputLabelProps={{ shrink: true }} />
-                <TextField label="Técnico Asignado (ID)" value={formData.assigned_technician_id || 'N/A'} fullWidth disabled InputLabelProps={{ shrink: true }} />
+                <TextField label="Técnico Asignado (ID)" value={formData.assigned_technicians || 'N/A'} fullWidth disabled InputLabelProps={{ shrink: true }} />
 
 
                 {/* Campos Editables por el Técnico */}
