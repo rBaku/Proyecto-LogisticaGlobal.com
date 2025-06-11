@@ -1,5 +1,5 @@
 # Proyecto-LogisticaGlobal.com
-Proyecto de Asignatura Pruebas de Software (IN-331), Universidad Técnica Federico Santa María. Proyecto realizado por el grupo 8, desarrollado por:
+Proyecto de Asignatura Pruebas de Software (IN-331), Universidad Técnica Federico Santa María, Casa Central. Proyecto realizado por el grupo 8, desarrollado por:
 - [Jorge Moreno](https://github.com/SSJorge)
 - [Andres Saldias](https://github.com/Mickxz)
 - [Rolando Rojas](https://github.com/re-rojas)
