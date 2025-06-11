@@ -2,13 +2,12 @@ pipeline {
     agent any
 
     tools {
-        nodejs 'NodeJS_18' // Asegúrate de que este nombre coincida con la instalación en Jenkins
+        nodejs 'NodeJS_18'
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Usa el repositorio y rama configurados en el panel de Jenkins
                 checkout scm
             }
         }
@@ -18,6 +17,14 @@ pipeline {
                 dir('cliente') {
                     sh 'npm install'
                     sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Test Cliente (Frontend)') { 
+            steps {
+                dir('cliente') {
+                    sh 'npm test -- --watchAll=false'
                 }
             }
         }
@@ -37,6 +44,12 @@ pipeline {
                 }
             }
         }
+
+        stage('Archive Artifacts') {
+            steps {
+                archiveArtifacts artifacts: 'cliente/build/**/*', fingerprint: true
+            }
+        }
     }
 
     post {
@@ -46,11 +59,11 @@ pipeline {
         }
 
         success {
-            echo ' Pipeline ejecutado exitosamente.'
+            echo 'Pipeline ejecutado exitosamente.'
         }
 
         failure {
-            echo ' Pipeline falló. Revisa los logs.'
+            echo 'Pipeline falló. Revisa los logs.'
         }
     }
 }
