@@ -157,4 +157,19 @@ router.delete('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
   }
 });
 
+router.get('/username/:username', async (req, res) => {
+  const { username } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT id, username, full_name, role FROM users WHERE username = $1',
+      [username]
+    );
+    if (result.rowCount === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error buscando usuario por username:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 module.exports = router;

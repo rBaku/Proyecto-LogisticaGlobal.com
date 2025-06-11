@@ -32,6 +32,9 @@ router.post('/login', async (req, res, next) => {
 
     const user = result.rows[0];
 
+    console.log(user);
+    console.log("ASSD SDGSHDGHSGDHSGDHSGHASD");
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
@@ -41,6 +44,8 @@ router.post('/login', async (req, res, next) => {
     const { password: _, ...userWithoutPassword } = user;
 
     // Crear token
+    console.log("WSAEFSGFS");
+    console.log(user);
     const token = jwt.sign(
       {
         id: user.id,
@@ -52,6 +57,8 @@ router.post('/login', async (req, res, next) => {
       JWT_SECRET,
       { expiresIn: '1h' }
     );
+    console.log("sss")
+    console.log(token)
 
     // Establecer cookie con el token
     res.cookie('access_token', token, {
