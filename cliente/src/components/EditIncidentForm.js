@@ -25,7 +25,9 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
 
     useEffect(() => {
         setIsLoadingTechnicians(true);
-        fetch('http://localhost:3001/api/tecnicos')
+        fetch('http://localhost:3001/api/users?role=tecnico',{
+            credentials: 'include'
+        })
             .then(res => {
                 if (!res.ok) {
                     throw new Error(`Error al cargar técnicos: ${res.status}`);

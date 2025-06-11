@@ -10,8 +10,10 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
 
+// POST /login
 router.post('/login', async (req, res, next) => {
   const { username, password } = req.body;
+  console.log('Intento de login:', username);
 
   if (!username || !password) {
     return res.status(400).json({ error: 'Username o email y password son obligatorios.' });
@@ -20,7 +22,7 @@ router.post('/login', async (req, res, next) => {
   try {
     // Buscar por username o email
     const result = await pool.query(
-      'SELECT * FROM users WHERE username = $1 OR email = $1',
+      'SELECT id, username, email, role, password, full_name FROM users WHERE username = $1 OR email = $1',
       [username]
     );
 
@@ -35,24 +37,29 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
     }
 
+    // Excluir la contraseña
     const { password: _, ...userWithoutPassword } = user;
 
+    // Crear token
     const token = jwt.sign(
       {
         id: user.id,
         username: user.username,
         email: user.email,
         role: user.role,
+        full_name: user.full_name // Opcional: solo si lo necesitas en el token
       },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
 
+    // Establecer cookie con el token
     res.cookie('access_token', token, {
       httpOnly: true,
-      maxAge: 1 * 60 * 60 * 1000,
+      maxAge: 1 * 60 * 60 * 1000, // 1 hora
     });
 
+    // Enviar datos del usuario
     res.json({
       user: userWithoutPassword,
       token,

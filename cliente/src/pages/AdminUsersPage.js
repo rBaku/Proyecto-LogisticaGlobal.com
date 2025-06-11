@@ -16,7 +16,7 @@ function AdminUsersPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'user' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'user', full_name: '' });
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -48,7 +48,10 @@ function AdminUsersPage() {
     const confirm = window.confirm(`¿Eliminar al usuario "${username}"?`);
     if (!confirm) return;
     try {
-      const res = await fetch(`http://localhost:3001/api/users/${userId}`, { method: 'DELETE' });
+      const res = await fetch(`http://localhost:3001/api/users/${userId}`, { 
+        method: 'DELETE',
+        credentials: 'include', 
+    });
       if (!res.ok) throw new Error('Error al eliminar usuario');
       showSnackbar(`Usuario "${username}" eliminado correctamente.`, 'warning');
       fetchUsers();
@@ -60,7 +63,7 @@ function AdminUsersPage() {
 
   const handleOpenDialog = (user = null) => {
     setEditingUser(user);
-    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: 'user' });
+    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: 'user', full_name: '' });
     setDialogOpen(true);
   };
 
@@ -118,6 +121,7 @@ function AdminUsersPage() {
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Username</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Nombre completo</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Role</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }} align="center">Acciones</TableCell>
@@ -129,6 +133,7 @@ function AdminUsersPage() {
                     <TableRow hover key={user.id}>
                       <TableCell>{user.id}</TableCell>
                       <TableCell>{user.username}</TableCell>
+                      <TableCell>{user.full_name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>{user.role}</TableCell>
                       <TableCell align="center">
@@ -147,7 +152,7 @@ function AdminUsersPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} align="center">No hay usuarios registrados.</TableCell>
+                    <TableCell colSpan={6} align="center">No hay usuarios registrados.</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -161,6 +166,7 @@ function AdminUsersPage() {
         <DialogContent>
           <TextField fullWidth margin="dense" label="Username" name="username" value={form.username} onChange={handleChange} />
           <TextField fullWidth margin="dense" label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
+          <TextField fullWidth margin="dense" label="Nombre completo" name="full_name" value={form.full_name} onChange={handleChange}/>
           <TextField fullWidth margin="dense" label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
           <TextField fullWidth margin="dense" label="Rol" name="role" value={form.role} onChange={handleChange} />
         </DialogContent>

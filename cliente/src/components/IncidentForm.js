@@ -36,7 +36,9 @@ function IncidentForm({ onResult }) {
   useEffect(() => {
     // Fetch para robots
     setIsLoadingRobots(true);
-    fetch('http://localhost:3001/api/robots') // <-- URL actualizada
+    fetch('http://localhost:3001/api/robots', {
+      credentials: 'include'
+    }) // <-- URL actualizada
       .then(res => {
         if (!res.ok) {
           throw new Error(`Error al cargar robots: ${res.status}`);
@@ -57,7 +59,9 @@ function IncidentForm({ onResult }) {
 
     // Fetch para técnicos
     setIsLoadingTechnicians(true);
-    fetch('http://localhost:3001/api/tecnicos') // <-- URL actualizada
+    fetch('http://localhost:3001/api/users?role=tecnico', {
+      credentials: 'include',
+    })
       .then(res => {
         if (!res.ok) {
           throw new Error(`Error al cargar técnicos: ${res.status}`);
@@ -121,6 +125,7 @@ function IncidentForm({ onResult }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(incidentData),
+        credentials: 'include',
       }).then(async response => {
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ message: `Error ${response.status}` }));
