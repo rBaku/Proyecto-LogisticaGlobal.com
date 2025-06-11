@@ -18,4 +18,3 @@ app.use('/api/tecnicos', tecnicosRoutes);
 app.listen(3001, () => {
   console.log('Servidor corriendo en el puerto 3001');
 });
-//test jenkins
