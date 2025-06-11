@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db'); // Tu módulo de conexión a la BD
 
+const authMiddleware = require('../middleware/auth'); 
+const authorizeRoles = require('../middleware/authorizeRoles'); 
+
 // POST /api/incidentes - Crear un nuevo incidente (ficha de incidente)
-router.post('/', async (req, res, next) => {
+router.post('/', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
   const {
     company_report_id, // ID manual de la empresa
     robot_id,
@@ -70,7 +73,7 @@ router.get('/', async (_req, res, next) => {
 });
 
 // GET /api/incidentes/:id - Obtener un incidente específico por su ID de BD (UUID)
-router.get('/:id', async (req, res, next) => {
+router.get('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
   const { id } = req.params; // Este es el id UUID de la tabla Incidents
   try {
     const result = await pool.query('SELECT * FROM Incidents WHERE id = $1', [id]);
@@ -85,7 +88,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // PUT /api/incidentes/:id - Actualizar un incidente existente
-router.put('/:id', async (req, res, next) => {
+router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
   const { id } = req.params; // ID (UUID) de la ficha de incidente a actualizar
   const {
     // company_report_id, // Generalmente no se cambia, pero depende de la lógica de negocio
@@ -156,7 +159,7 @@ router.put('/:id', async (req, res, next) => {
 });
 
 // DELETE /api/incidentes/:id - Eliminar una ficha de incidente
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
   const { id } = req.params; // ID (UUID) de la ficha
   try {
     const result = await pool.query('DELETE FROM Incidents WHERE id = $1 RETURNING id', [id]);

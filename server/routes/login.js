@@ -14,11 +14,15 @@ router.post('/login', async (req, res, next) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
-    return res.status(400).json({ error: 'Username y password son obligatorios.' });
+    return res.status(400).json({ error: 'Username o email y password son obligatorios.' });
   }
 
   try {
-    const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
+    // Buscar por username o email
+    const result = await pool.query(
+      'SELECT * FROM users WHERE username = $1 OR email = $1',
+      [username]
+    );
 
     if (result.rowCount === 0) {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
@@ -31,10 +35,8 @@ router.post('/login', async (req, res, next) => {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
     }
 
-    // Excluir la contraseña
     const { password: _, ...userWithoutPassword } = user;
 
-    // Crear token JWT con info básica del usuario
     const token = jwt.sign(
       {
         id: user.id,
@@ -46,22 +48,16 @@ router.post('/login', async (req, res, next) => {
       { expiresIn: '1h' }
     );
 
-
-    // Setear la cookie (segura en producción)
     res.cookie('access_token', token, {
-      httpOnly: true, //la cookie solo se puede acceder en el servidor y no desde javascripy
-      //secure: process.env.NODE_ENV === 'production', // Solo HTTPS en prod
-      //sameSite: 'Strict', //la cookie solo se puede acceder en el mismo dominio
-      maxAge: 1 * 60 * 60 * 1000, // 2 horas
+      httpOnly: true,
+      maxAge: 1 * 60 * 60 * 1000,
     });
-
 
     res.json({
       user: userWithoutPassword,
       token,
       role: user.role
     });
-
 
   } catch (error) {
     console.error('Error en POST /login:', error);
