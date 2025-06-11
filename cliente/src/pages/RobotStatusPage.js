@@ -33,6 +33,7 @@ const Transition = React.forwardRef(function Transition(props, ref) {
 });
 
 function RobotStatusPage() {
+  const userRole = localStorage.getItem('role');
   const [robots, setRobots] = useState([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false); // Para el modal de creación
@@ -152,15 +153,17 @@ function RobotStatusPage() {
         <Typography variant="h4" component="h1">
           Estado de Robots
         </Typography>
-        <Tooltip title="Añadir Nuevo Robot">
-          <Button
-            variant="contained"
-            startIcon={<AddCircleOutlineIcon />}
-            onClick={handleOpenCreateModal}
-          >
-            Crear Robot
-          </Button>
-        </Tooltip>
+        {userRole === 'admin' && (
+          <Tooltip title="Añadir Nuevo Robot">
+            <Button
+              variant="contained"
+              startIcon={<AddCircleOutlineIcon />}
+              onClick={handleOpenCreateModal}
+            >
+              Crear Robot
+            </Button>
+          </Tooltip>
+        )}
       </Box>
 
       {isLoadingData ? (
@@ -174,7 +177,9 @@ function RobotStatusPage() {
                     <TableCell sx={{ fontWeight: 'bold' }}>ID Robot</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Estado Operativo</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                    {userRole === 'admin' && (
+                      <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
+                    )}
                 </TableRow>
                 </TableHead>
                 <TableBody>
@@ -192,14 +197,15 @@ function RobotStatusPage() {
                                 {robot.is_operational ? "Operativo" : "No Operativo"}
                             </Typography>
                         </TableCell>
-                        <TableCell align="center">
-                            {/* No hay botón de editar por ahora según requerimiento */}
+                        {userRole === 'admin' && (
+                          <TableCell align="center">
                             <Tooltip title="Eliminar Robot">
-                                <IconButton size="small" color="error" onClick={() => handleDeleteRobot(robot.id, robot.name)}>
-                                    <DeleteIcon fontSize="inherit" />
-                                </IconButton>
+                              <IconButton size="small" color="error" onClick={() => handleDeleteRobot(robot.id, robot.name)}>
+                                <DeleteIcon fontSize="inherit" />
+                              </IconButton>
                             </Tooltip>
-                        </TableCell>
+                          </TableCell>
+                        )}
                     </TableRow>
                     ))
                 ) : (

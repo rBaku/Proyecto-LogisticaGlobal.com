@@ -1,6 +1,6 @@
 // src/components/Navbar.js
 import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom'; // Usar alias para evitar conflicto
+import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Usar alias para evitar conflicto
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Toolbar from '@mui/material/Toolbar';
@@ -21,15 +21,28 @@ const drawerWidth = 240;
 // Elementos de navegación (como los tenías)
 const navItems = [
   { text: 'Inicio', path: '/' },
-  { text: 'Registrar Incidente', path: '/crear-incidente' },
+  /*{ text: 'Registrar Incidente', path: '/crear-incidente' },
   { text: 'Ver Incidentes', path: '/incidentes' },
   { text: 'Estado Robots', path: '/robots-estado' },
   { text: 'Vista Técnico', path: '/tecnico/incidentes' },
+  { text: 'Login', path: '/login' },*/
 ];
 
 function Navbar() {
+  const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  // const navigate = useNavigate(); // Descomentado en tu versión, lo mantengo así
+  const handleLogout = async () => {
+  try {
+    await fetch('http://localhost:3001/api/login/logout', {
+      method: 'POST',
+      credentials: 'include', // Necesario para enviar la cookie
+    });
+
+    navigate('/login');
+  } catch (error) {
+    console.error('Error al cerrar sesión:', error);
+  }
+};
 
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
@@ -127,6 +140,16 @@ function Navbar() {
                 )}
               </React.Fragment>
             ))}
+            <Button
+              onClick={handleLogout}
+              sx={{
+                color: '#fff',
+                textTransform: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              Cerrar sesión
+            </Button>
           </Box>
         </Toolbar>
       </AppBar>
