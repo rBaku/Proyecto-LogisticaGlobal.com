@@ -1,27 +1,26 @@
 pipeline {
-    agent any 
+    agent any
 
     tools {
-
-        nodejs 'NodeJS_18'
+        nodejs 'NodeJS_18' // Asegúrate de que este nombre coincida con la instalación en Jenkins
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/rBaku/Proyecto-LogisticaGlobal.com' 
+                // Usa el repositorio y rama configurados en el panel de Jenkins
+                checkout scm
             }
         }
 
         stage('Build Cliente (Frontend)') {
             steps {
-                dir('cliente') { 
+                dir('cliente') {
                     sh 'npm install'
-                    sh 'npm run build' 
+                    sh 'npm run build'
                 }
             }
         }
-
 
         stage('Build Server (Backend)') {
             steps {
@@ -33,8 +32,8 @@ pipeline {
 
         stage('Test Server (Backend)') {
             steps {
-                dir('server') { 
-                    sh 'npm test' 
+                dir('server') {
+                    sh 'npm test'
                 }
             }
         }
@@ -43,13 +42,15 @@ pipeline {
     post {
         always {
             echo 'Limpiando el workspace...'
-            deleteDir() 
+            deleteDir()
         }
+
         success {
-            echo 'Pipeline ejecutado exitosamente!'
+            echo ' Pipeline ejecutado exitosamente.'
         }
+
         failure {
-            echo 'Pipeline falló. Revisa los logs.'
+            echo ' Pipeline falló. Revisa los logs.'
         }
     }
 }
