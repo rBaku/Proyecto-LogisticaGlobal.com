@@ -21,11 +21,11 @@ const drawerWidth = 240;
 // Elementos de navegación (como los tenías)
 const navItems = [
   { text: 'Inicio', path: '/' },
-  { text: 'Registrar Incidente', path: '/crear-incidente' },
+  /*{ text: 'Registrar Incidente', path: '/crear-incidente' },
   { text: 'Ver Incidentes', path: '/incidentes' },
   { text: 'Estado Robots', path: '/robots-estado' },
   { text: 'Vista Técnico', path: '/tecnico/incidentes' },
-  { text: 'Login', path: '/login' },
+  { text: 'Login', path: '/login' },*/
 ];
 
 function Navbar() {
