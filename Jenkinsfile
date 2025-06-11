@@ -1,8 +1,8 @@
-
 pipeline {
     agent any 
 
     tools {
+
         nodejs 'NodeJS_18'
     }
 
@@ -15,16 +15,17 @@ pipeline {
 
         stage('Build Cliente (Frontend)') {
             steps {
-                dir('*/cliente') { 
+                dir('cliente') { 
                     sh 'npm install'
                     sh 'npm run build' 
                 }
             }
         }
 
+
         stage('Build Server (Backend)') {
             steps {
-                dir('*/server') {
+                dir('server') {
                     sh 'npm install'
                 }
             }
@@ -32,18 +33,17 @@ pipeline {
 
         stage('Test Server (Backend)') {
             steps {
-                dir('*/server') {
-                    sh 'npm test'
+                dir('server') { 
+                    sh 'npm test' 
                 }
             }
         }
-
     }
 
     post {
         always {
             echo 'Limpiando el workspace...'
-            deleteDir()
+            deleteDir() 
         }
         success {
             echo 'Pipeline ejecutado exitosamente!'
