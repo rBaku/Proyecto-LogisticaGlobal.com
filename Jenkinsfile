@@ -1,4 +1,4 @@
-// Jenkinsfile
+
 pipeline {
     agent any 
 
@@ -18,12 +18,13 @@ pipeline {
                 dir('*/cliente') { 
                     sh 'npm install'
                     sh 'npm run build' 
+                }
             }
         }
 
         stage('Build Server (Backend)') {
             steps {
-                dir('*/server') { 
+                dir('*/server') {
                     sh 'npm install'
                 }
             }
@@ -31,19 +32,18 @@ pipeline {
 
         stage('Test Server (Backend)') {
             steps {
-                dir('*/server/test') {
+                dir('*/server') {
                     sh 'npm test'
                 }
             }
         }
-
 
     }
 
     post {
         always {
             echo 'Limpiando el workspace...'
-            deleteDir() 
+            deleteDir()
         }
         success {
             echo 'Pipeline ejecutado exitosamente!'
