@@ -48,20 +48,7 @@ function LoginPage() {
       setSnackbarMessage(`Bienvenido, ${user.username}`);
       setSnackbarSeverity('success');
 
-      // Redirección basada en el rol
-      switch (role) {
-        case 'admin':
-          navigate('/');
-          break;
-        case 'supervisor':
-          navigate('/');
-          break;
-        case 'tecnico':
-          navigate('/');
-          break;
-        default:
-          navigate('/');
-      }
+      navigate('/'); // Redirigir a la página principal
 
     } catch (error) {
       setSnackbarMessage(error.message);
