@@ -16,7 +16,7 @@ function AdminUsersPage() {
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form, setForm] = useState({ username: '', email: '', password: '', role: 'user', full_name: '' });
+  const [form, setForm] = useState({ username: '', email: '', password: '', role: '', full_name: '' });
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
@@ -63,7 +63,7 @@ function AdminUsersPage() {
 
   const handleOpenDialog = (user = null) => {
     setEditingUser(user);
-    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: 'user', full_name: '' });
+    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: '', full_name: '' });
     setDialogOpen(true);
   };
 
@@ -79,16 +79,28 @@ function AdminUsersPage() {
 
   const handleSubmit = async () => {
     const method = editingUser ? 'PUT' : 'POST';
-    const url = editingUser ? `http://localhost:3001/api/users/${editingUser.id}` : 'http://localhost:3001/api/users';
+    const url = editingUser
+      ? `http://localhost:3001/api/users/${editingUser.id}`
+      : 'http://localhost:3001/api/users';
+
+    // Copia del formulario para poder modificar
+    const formData = { ...form };
+
+    // Si se está editando y la contraseña está vacía, eliminar el campo del objeto
+    if (editingUser && formData.password.trim() === '') {
+      delete formData.password;
+    }
 
     try {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify(formData),
         credentials: 'include'
       });
+
       if (!res.ok) throw new Error('Error al guardar el usuario');
+
       showSnackbar(editingUser ? 'Usuario actualizado.' : 'Usuario creado.');
       handleCloseDialog();
       fetchUsers();
@@ -168,7 +180,7 @@ function AdminUsersPage() {
           <TextField fullWidth margin="dense" label="Email" name="email" type="email" value={form.email} onChange={handleChange} />
           <TextField fullWidth margin="dense" label="Nombre completo" name="full_name" value={form.full_name} onChange={handleChange}/>
           <TextField fullWidth margin="dense" label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
-          <TextField fullWidth margin="dense" label="Rol" name="role" value={form.role} onChange={handleChange} />
+          <TextField fullWidth margin="dense" label="Rol (admin, supervisor, tecnico o jefe_turno)" name="role" value={form.role} onChange={handleChange} />
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseDialog}>Cancelar</Button>
