@@ -98,6 +98,31 @@ function LandingPage() {
             </Card>
           </Grid>
         )}
+        {/* Generar Reporte: admin y supervisor */}
+        {(role === 'admin' || role === 'supervisor') && (
+          <Grid item xs={12} sm={6} md={4}>
+            <Card sx={{ height: '100%' }}>
+              <CardContent>
+                <Typography gutterBottom variant="h5" component="h2">
+                  Generar Reporte
+                </Typography>
+                <Typography>
+                  Genera un reporte PDF con los incidentes registrados para análisis y respaldo.
+                </Typography>
+              </CardContent>
+              <CardActions>
+                <Button
+                  size="small"
+                  variant="contained"
+                  component={RouterLink}
+                  to="/report"
+                >
+                  Generar
+                </Button>
+              </CardActions>
+            </Card>
+          </Grid>
+        )}
 
         {/* Ver Usuarios: solo admin */}
         {role === 'admin' && (

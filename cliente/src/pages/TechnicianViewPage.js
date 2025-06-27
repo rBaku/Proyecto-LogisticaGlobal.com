@@ -49,7 +49,6 @@ function TechnicianViewPage() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const editFormRef = useRef();
-  const [techniciansMap, setTechniciansMap] = useState({});
   const [currentTechnicianId, setCurrentTechnicianId] = useState(null);
 
   useEffect(() => {//obtener id
@@ -100,23 +99,6 @@ function TechnicianViewPage() {
     }
   }, [showSnackbar, currentTechnicianId]);
   
-  useEffect(() => {
-    const fetchTechnicians = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/tecnicos');
-        if (!response.ok) throw new Error('No se pudieron cargar los técnicos');
-        const data = await response.json();
-        const map = data.reduce((acc, tech) => {
-          acc[tech.id] = tech.full_name;
-          return acc;
-        }, {});
-        setTechniciansMap(map);
-      } catch (error) {
-        console.error("Error cargando técnicos:", error);
-      }
-    };
-    fetchTechnicians();
-  }, []);
 
   useEffect(() => {
     if (currentTechnicianId !== null) {
@@ -176,7 +158,6 @@ function TechnicianViewPage() {
     }
   };
 
-  const getTechnicianName = (techId) => techniciansMap[techId] || techId || 'N/A';
   const displayGravity = (gravityValue) => gravityValue == null ? 'Sin asignar' : gravityValue;
 
   return (
