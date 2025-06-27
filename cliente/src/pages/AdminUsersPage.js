@@ -63,7 +63,7 @@ function AdminUsersPage() {
 
   const handleOpenDialog = (user = null) => {
     setEditingUser(user);
-    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: 'user', full_name: '' });
+    setForm(user ? { ...user, password: '' } : { username: '', email: '', password: '', role: '', full_name: '' });
     setDialogOpen(true);
   };
 
