@@ -5,7 +5,7 @@ const authMiddleware = require('../middleware/auth');
 const authorizeRoles = require('../middleware/authorizeRoles');
 
 // POST /api/incidentes
-router.post('/', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
+router.post('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
   const {
     company_report_id,
     robot_id,
@@ -92,7 +92,7 @@ router.post('/', authMiddleware, authorizeRoles('admin', 'supervisor'), async (r
 });
 
 // GET /api/incidentes - Obtener todos los incidentes con técnicos asignados
-router.get('/', async (_req, res, next) => {
+router.get('/', authMiddleware, async (_req, res, next) => {
   try {
     // Obtener todos los incidentes
     const pool = await initializePool();
@@ -138,7 +138,7 @@ router.get('/', async (_req, res, next) => {
 });
 
 // GET /api/incidentes/:id
-router.get('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
+router.get('/:id', authMiddleware, async (req, res, next) => {
   const { id } = req.params;
   try {
     const pool = await initializePool();
