@@ -1,6 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const chai = require('chai');
+const sinon = require('sinon');
 const { query, initializePool } = require('../db');
 const robotsRouter = require('../routes/robots');
 const expect = chai.expect;
@@ -9,6 +10,7 @@ describe('API /api/robots (Integración)', () => {
   let app;
 
   before(async function () {
+    sinon.stub(console, 'error'); // evita imprimir en consola
     this.timeout(10000); // Espera hasta 10 segundos por si la conexión a Azure tarda
 
     await initializePool();
@@ -28,6 +30,9 @@ describe('API /api/robots (Integración)', () => {
 });
   afterEach(async () => { //Borra estos valores que eran para hacer pruebas despues de realizarla para evitar basura en la BD
     await query('DELETE FROM Robots WHERE id IN ($1, $2, $3, $4)', ['RBT-TestGet1', 'RBT-TestGet2', 'RBT-TestDuplicate', 'RBT-MissingName']);
+  });
+  after(() => {
+    console.error.restore(); // restaura comportamiento original
   });
 
   it('GET / debería devolver lista de robots desde la base de datos', async () => {

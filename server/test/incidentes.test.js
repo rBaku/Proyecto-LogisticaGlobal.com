@@ -1,6 +1,7 @@
 const request = require('supertest');
 const express = require('express');
 const chai = require('chai');
+const sinon = require('sinon');
 const { query, initializePool } = require('../db');
 const incidentesRouter = require('../routes/incidentes');
 const expect = chai.expect;
@@ -9,6 +10,7 @@ describe('API /api/incidentes (Integración)', () => {
   let app;
 
   before(async function () {
+    sinon.stub(console, 'error'); // evita imprimir en consola
     this.timeout(10000); // Espera por si tarda conexión
     await initializePool();
 
@@ -50,6 +52,9 @@ describe('API /api/incidentes (Integración)', () => {
     )`);
     await query(`DELETE FROM Robots WHERE id = 'RBT-TestGet1'`);
     await query(`DELETE FROM Technicians WHERE id = 'TECH-Test'`);
+  });
+  after(() => {
+    console.error.restore(); // restaura comportamiento original
   });
 
   it('GET / debería devolver una lista de incidentes', async () => {
