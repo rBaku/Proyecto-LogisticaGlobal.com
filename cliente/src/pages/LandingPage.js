@@ -21,8 +21,8 @@ function LandingPage() {
       </Typography>
 
       <Grid container spacing={3} justifyContent="center" sx={{ mt: 3 }}>
-        {/* Registrar Incidente: supervisor y admin */}
-        {(role === 'supervisor' || role === 'admin') && (
+        {/* Registrar Incidente: supervisor y admin y jefe turno */}
+        {(role === 'supervisor' || role === 'admin' || role === 'jefe_turno') && (
           <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
               <CardContent sx={{ flexGrow: 1 }}>
@@ -48,7 +48,7 @@ function LandingPage() {
         )}
 
         {/* Ver Incidentes: supervisor y admin */}
-        {(role === 'supervisor' || role === 'admin') && (
+        {(role === 'supervisor' || role === 'admin'|| role === 'jefe_turno') && (
           <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>
@@ -74,7 +74,7 @@ function LandingPage() {
         )}
 
         {/* Estado Robots: todos los roles */}
-        {(role === 'supervisor' || role === 'admin' || role === 'tecnico') && (
+        {(role === 'supervisor' || role === 'admin' || role === 'tecnico'|| role === 'jefe_turno') && (
           <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ height: '100%' }}>
               <CardContent>

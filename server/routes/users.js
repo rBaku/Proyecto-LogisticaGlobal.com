@@ -12,6 +12,7 @@ const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
 const authMiddleware = require('../middleware/auth');
+const authorizeRoles = require('../middleware/authorizeRoles');
 const onlyAdmin = require('../middleware/onlyAdmin');
 
 // POST /api/users - Crear un nuevo usuario
@@ -46,7 +47,7 @@ router.post('/', authMiddleware, onlyAdmin, async (req, res, next) => {
 });
 
 // GET /api/users - Obtener todos los usuarios
-router.get('/', authMiddleware, onlyAdmin, async (req, res, next) => {
+router.get('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
   const { role } = req.query;
   try {
     let result;
@@ -68,7 +69,7 @@ router.get('/', authMiddleware, onlyAdmin, async (req, res, next) => {
 });
 
 // GET /api/users/:id - Obtener un usuario por ID
-router.get('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
+router.get('/:id', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT id, username, email, role, full_name FROM users WHERE id = $1', [id]);
@@ -157,7 +158,7 @@ router.delete('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
   }
 });
 
-router.get('/username/:username', async (req, res) => {
+router.get('/username/:username', authMiddleware, async (req, res) => {
   const { username } = req.params;
   try {
     const result = await pool.query(

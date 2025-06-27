@@ -82,6 +82,9 @@ function IncidentListPage() {
   const editFormRef = useRef();
   const [techniciansMap, setTechniciansMap] = useState({});
 
+  const userRole = localStorage.getItem('rol');
+  const canEditOrDelete = userRole === 'admin' || userRole === 'supervisor';
+
   const showSnackbar = useCallback((message, severity = 'success') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
@@ -109,31 +112,6 @@ function IncidentListPage() {
       setIsLoadingData(false);
     }
   }, [showSnackbar]);
-
-  useEffect(() => {
-    const fetchTechnicians = async () => {
-        try {
-            const response = await fetch('http://localhost:3001/api/tecnicos', {
-        credentials: 'include'
-      }); // <-- URL actualizada
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'No se pudieron cargar los técnicos');
-            }
-            const data = await response.json();
-            const map = data.reduce((acc, tech) => {
-                acc[tech.id] = tech.full_name; // API devuelve full_name
-                return acc;
-            }, {});
-            setTechniciansMap(map);
-        } catch (error) {
-            console.error("Error cargando técnicos:", error);
-            showSnackbar(`Error al cargar técnicos: ${error.message}`, 'error');
-        }
-    };
-    fetchTechnicians();
-  }, [showSnackbar]); // showSnackbar como dependencia si se usa dentro
-
 
   useEffect(() => {
     fetchIncidentsFromAPI();
@@ -327,8 +305,12 @@ function IncidentListPage() {
                         <TableCell><Tooltip title={incident.id}><Typography variant="caption" noWrap>{incident.id.substring(0,8)}...</Typography></Tooltip></TableCell>
                         <TableCell align="center">
                             <Tooltip title="Ver Detalles"><IconButton size="small" onClick={() => handleViewDetails(incident.id)}><VisibilityIcon fontSize="inherit" /></IconButton></Tooltip>
-                            <Tooltip title="Editar"><IconButton size="small" onClick={() => handleEdit(incident.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
-                            <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+                            {canEditOrDelete && (
+                              <>
+                                <Tooltip title="Editar"><IconButton size="small" onClick={() => handleEdit(incident.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
+                                <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+                              </>
+                            )}
                         </TableCell>
                     </TableRow>
                     ))
