@@ -12,7 +12,7 @@ import TableRow from '@mui/material/TableRow';
 import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 function ReportPage() {
   const [period, setPeriod] = useState('monthly');
@@ -29,9 +29,7 @@ function ReportPage() {
     doc.text(`Total: ${stats.total}`, 14, 36);
     doc.text(`Gravedad promedio: ${stats.avgGravity}`, 14, 42);
 
-    let startY = 50;
-
-    doc.autoTable({
+    autoTable(doc, {
         head: [['Fecha', 'Robot', 'Tipo', 'Gravedad', 'Estado', 'Técnicos']],
         body: data.map(i => [
         new Date(i.incident_timestamp).toLocaleDateString(),
@@ -41,16 +39,19 @@ function ReportPage() {
         i.status,
         (i.technicians || []).join(', ')
         ]),
-        startY
+        startY: 50,
     });
 
     doc.save('reporte_incidentes.pdf');
     };
 
   useEffect(() => {
-    fetch(`/api/report?period=${period}`)
+    fetch(`http://localhost:3001/api/report?period=${period}`, {
+        credentials: 'include'
+    })
       .then(res => res.json())
       .then(data => {
+        console.log('Data recibida desde el backend:', data); // 👈🏽 Agrega esto
         setData(data);
         generateStats(data);
       });
