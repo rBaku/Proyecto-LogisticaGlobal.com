@@ -41,6 +41,7 @@ function LoginPage() {
       const { user, role } = data;
 
       // Guardar el rol en localStorage para usarlo en rutas protegidas
+      localStorage.setItem('user', JSON.stringify(user)); // Guardar el usuario completo
       localStorage.setItem('role', role);
       localStorage.setItem('username', user.username); // opcional
 
