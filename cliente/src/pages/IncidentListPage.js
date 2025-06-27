@@ -80,9 +80,9 @@ function IncidentListPage() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const editFormRef = useRef();
-  const [techniciansMap, setTechniciansMap] = useState({});
 
-  const userRole = localStorage.getItem('rol');
+  const userRole = localStorage.getItem('role');
+  
   const canEditOrDelete = userRole === 'admin' || userRole === 'supervisor';
 
   const showSnackbar = useCallback((message, severity = 'success') => {
@@ -246,7 +246,6 @@ function IncidentListPage() {
     }
   };
 
-  const getTechnicianName = (techId) => techniciansMap[techId] || techId || 'N/A';
   const displayGravity = (gravityValue) => gravityValue === null || gravityValue === undefined ? 'Sin asignar' : gravityValue;
 
 
