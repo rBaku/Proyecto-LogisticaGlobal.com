@@ -51,7 +51,7 @@ const filterableColumns = [
 ];
 
 const formatDateTime = (dateTimeString) => {
-  if (!dateTimeString) return 'N/A';
+  if (!dateTimeString) return ''; //"N/A"
   try {
     const date = new Date(dateTimeString);
     if (isNaN(date.getTime())) return 'Fecha inválida';
@@ -248,6 +248,7 @@ function IncidentListPage() {
 
   const displayGravity = (gravityValue) => gravityValue === null || gravityValue === undefined ? 'Sin asignar' : gravityValue;
 
+  console.log("selectedIncident:", selectedIncident);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -299,7 +300,7 @@ function IncidentListPage() {
                         <TableCell>
                           {(incident.assigned_technicians || [])
                             .map(tech => tech.full_name)
-                            .join(', ') || 'N/A'}
+                            .join(', ') || ''}{/* N/A*/}
                         </TableCell>
                         <TableCell><Tooltip title={incident.id}><Typography variant="caption" noWrap>{incident.id.substring(0,8)}...</Typography></Tooltip></TableCell>
                         <TableCell align="center">
@@ -339,11 +340,19 @@ function IncidentListPage() {
                       <Typography>
                         {(selectedIncident.assigned_technicians || [])
                           .map(tech => tech.full_name)
-                          .join(', ') || 'N/A'}
+                          .join(', ') || ''}{/* N/A */}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12}><Typography variant="subtitle2">Causa Inicial:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || 'N/A'}</Typography></Grid>
-                    <Grid item xs={12}><Typography variant="subtitle2">Comentario del Técnico:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.technician_comment || 'N/A'}</Typography></Grid>
+                    <Grid item xs={12}><Typography variant="subtitle2">Causa Inicial:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || ''}</Typography></Grid>{ /* N/A */}
+                    <Grid item xs={12}><Typography variant="subtitle2">Comentario del Técnico:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.technician_comment || ''}</Typography></Grid>{ /* N/A */}
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Creado por:</Typography><Typography>{selectedIncident.created_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Actualizado por:</Typography><Typography>{selectedIncident.updated_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Firmado por:</Typography><Typography>{selectedIncident.signed_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Firma:</Typography><Typography>{formatDateTime(selectedIncident.signed_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Finalizado por:</Typography><Typography>{selectedIncident.finished_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Finalización:</Typography><Typography>{formatDateTime(selectedIncident.finished_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Creación:</Typography><Typography>{formatDateTime(selectedIncident.created_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Última Actualización:</Typography><Typography>{formatDateTime(selectedIncident.updated_at)}</Typography></Grid>
                 </Grid>
             ) : ( <DialogContentText>Cargando detalles...</DialogContentText> )}
         </DialogContent>
