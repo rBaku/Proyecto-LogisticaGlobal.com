@@ -1,13 +1,19 @@
 const request = require('supertest');
 const express = require('express');
 const chai = require('chai');
+const jwt = require('jsonwebtoken');
 const sinon = require('sinon');
 const { query, initializePool } = require('../db');
 const incidentesRouter = require('../routes/incidentes');
 const expect = chai.expect;
+const cookieParser = require('cookie-parser');
+const { v4: uuidv4 } = require('uuid');
+
+const uuid = uuidv4();
 
 describe('API /api/incidentes (Integración)', () => {
   let app;
+  let token;
 
   before(async function () {
     sinon.stub(console, 'error'); // evita imprimir en consola
@@ -16,42 +22,75 @@ describe('API /api/incidentes (Integración)', () => {
 
     app = express();
     app.use(express.json());
+    app.use(cookieParser());
     app.use('/api/incidentes', incidentesRouter);
   });
 
   beforeEach(async () => {
-  // Insertar robot necesario para cumplir la clave foránea
-  await query(`
-    INSERT INTO Robots (id, name, is_operational)
-    VALUES ('RBT-TestGet1', 'Robot Prueba', true);
-  `);
-  // Insertar técnico necesario
-  await query(`
-    INSERT INTO Technicians (id, full_name)
-    VALUES ('TECH-Test', 'Técnico de Prueba')
-    ON CONFLICT (id) DO NOTHING;
-  `);
+    // Generar un token válido antes de cada test
+    token = jwt.sign({ id: 9992, role: 'admin' }, process.env.JWT_SECRET);
 
-  // Insertar incidente de prueba
-  await query(`
-    INSERT INTO Incidents (
-      id, company_report_id, robot_id, incident_timestamp, location,
-      type, cause, assigned_technician_id, gravity, status
-    )
-    VALUES (
-      gen_random_uuid(), 'INC-Test-001', 'RBT-TestGet1', '2024-01-01T10:00:00Z', 'Zona A',
-      'Error mecánico', 'Desgaste de pieza', 'TECH-Test', 5, 'Creado'
-    );
-  `);
+    // Insertar robot necesario para cumplir la clave foránea
+    await query(`
+      INSERT INTO Robots (id, name, state)
+      VALUES ('RBT-TestGet1', 'Robot Prueba', 'operativo');
+    `);
+    // Insertar técnicos necesario
+    await query(`
+      INSERT INTO Users (id, username, email, password, role, full_name)
+      VALUES ('10001', 'tecnico_test1','test1@example.com','password','tecnico','Técnico de Prueba 1')
+      ON CONFLICT (id) DO NOTHING;
+    `);
+    await query(`
+      INSERT INTO Users (id, username, email, password, role, full_name)
+      VALUES ('10002', 'tecnico_test2','test2@example.com','password','tecnico','Técnico de Prueba 2')
+      ON CONFLICT (id) DO NOTHING;
+    `);
 
+    // Insertar incidente de prueba
+    await query(`
+      INSERT INTO incidents (
+        id, company_report_id, robot_id, incident_timestamp, location,
+        type, cause, status, gravity, technician_comment, 
+        created_at, updated_at, signed_by_user_id, signed_at,
+        created_by, updated_by, finished_by, finished_at
+      ) VALUES (
+        $1, $2, $3, $4, $5,
+        $6, $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18
+      )
+    `, [
+      uuid, 'INC-Test-001', 'RBT-TestGet1', '2024-01-01T10:00:00Z', 'Zona A',
+      'Error mecánico', 'Desgaste de pieza', 'Creado', 5, 'Comentario del técnico',
+      new Date(), new Date(), null, null, null, null, null, null
+    ]);
+    //asociar 2 técnicos al incidente
+    await query(`
+      INSERT INTO incident_technicians (
+        incident_id, technician_user_id
+      ) VALUES (
+        $1, $2
+      )
+    `, [
+      uuid, '10001'
+    ]);
+    await query(`
+      INSERT INTO incident_technicians (
+        incident_id, technician_user_id
+      ) VALUES (
+        $1, $2
+      )
+    `, [
+      uuid, '10002'
+    ]);
 });
 
   afterEach(async () => {
-    await query(`DELETE FROM Incidents WHERE company_report_id IN (
-      'INC-Test-001', 'INC-Test-POST', 'INC-Test-BadGravity', 'INC-Test-BadGravity2', 'INC-Test-BadGravity3', 'INC-Test-Delete'
-    )`);
-    await query(`DELETE FROM Robots WHERE id = 'RBT-TestGet1'`);
-    await query(`DELETE FROM Technicians WHERE id = 'TECH-Test'`);
+    // Borrar lo ingresa en BeforeEach
+    await query(`DELETE FROM incident_technicians WHERE incident_id = $1`, [uuid]);
+    await query(`DELETE FROM incidents WHERE id = $1`, [uuid]);
+    await query(`DELETE FROM robots WHERE id = 'RBT-TestGet1'`);
+    await query(`DELETE FROM users WHERE id IN (10001, 10002)`);
   });
   after(() => {
     console.error.restore(); // restaura comportamiento original
