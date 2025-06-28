@@ -273,41 +273,19 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
       const currentUserId = req.user.id;
       const currentUserRole = req.user.role;
 
-      // Prepara fragmentos condicionales
-      const extraFields = [];
-      const extraValues = [];
-
-      // Agregar firmado si corresponde
-      if (status === 'Firmado') {
-        extraFields.push(`signed_by_user_id = $${10 + extraValues.length + 1}`);
-        extraValues.push(currentUserId);
-        extraFields.push(`signed_at = NOW()`);
-      }
-
-      // Agregar finalización si corresponde
-      if (status === 'Resuelto' && currentUserRole === 'tecnico') {
-        extraFields.push(`finished_by = $${10 + extraValues.length + 1}`);
-        extraValues.push(currentUserId);
-        extraFields.push(`finished_at = NOW()`);
-      }
-
-      const updateIncident = `
-        UPDATE Incidents
-        SET 
-          robot_id = COALESCE($1, robot_id),
-          incident_timestamp = COALESCE($2, incident_timestamp),
-          location = COALESCE($3, location),
-          type = COALESCE($4, type),
-          cause = COALESCE($5, cause),
-          status = COALESCE($6, status),
-          gravity = $7,
-          technician_comment = COALESCE($8, technician_comment),
-          updated_at = NOW(),
-          updated_by = $9
-          ${extraFields.length > 0 ? `, ${extraFields.join(', ')}` : ''}
-        WHERE id = $10
-        RETURNING *;
-      `;
+      // Campos base
+      const fields = [
+        'robot_id = COALESCE($1, robot_id)',
+        'incident_timestamp = COALESCE($2, incident_timestamp)',
+        'location = COALESCE($3, location)',
+        'type = COALESCE($4, type)',
+        'cause = COALESCE($5, cause)',
+        'status = COALESCE($6, status)',
+        'gravity = $7',
+        'technician_comment = COALESCE($8, technician_comment)',
+        'updated_at = NOW()',
+        'updated_by = $9'
+      ];
 
       const values = [
         robot_id,
@@ -318,10 +296,30 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         status,
         gravity,
         technician_comment,
-        currentUserId,
-        id,
-        ...extraValues
+        currentUserId
       ];
+
+      // Campos adicionales (firmado, resuelto)
+      if (status === 'Firmado') {
+        fields.push(`signed_by_user_id = $${values.length + 1}`);
+        values.push(currentUserId);
+        fields.push(`signed_at = NOW()`);
+      }
+
+      if (status === 'Resuelto' && currentUserRole === 'tecnico') {
+        fields.push(`finished_by = $${values.length + 1}`);
+        values.push(currentUserId);
+        fields.push(`finished_at = NOW()`);
+      }
+
+      // Último valor: id
+      values.push(id);
+      const updateIncident = `
+        UPDATE Incidents
+        SET ${fields.join(', ')}
+        WHERE id = $${values.length}
+        RETURNING *;
+      `;
 
       const result = await client.query(updateIncident, values);
 
@@ -330,15 +328,13 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         return res.status(404).json({ message: 'Incidente no encontrado para actualizar.' });
       }
 
-      // Reemplazar técnicos si se envía lista nueva
+      // Reemplazar técnicos asignados
       if (Array.isArray(assigned_technicians)) {
         await client.query('DELETE FROM Incident_Technicians WHERE incident_id = $1', [id]);
-
         const insertTech = `
           INSERT INTO Incident_Technicians (incident_id, technician_user_id)
           VALUES ($1, $2);
         `;
-
         for (const technicianId of assigned_technicians) {
           await client.query(insertTech, [id, technicianId]);
         }
