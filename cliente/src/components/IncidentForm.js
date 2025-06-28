@@ -17,6 +17,11 @@ import Chip from '@mui/material/Chip';
 const incidentTypes = ['Fallo mecánico', 'Colisión', 'Error de software', 'Batería baja', 'Obstrucción', 'Otro'];
 const defaultStatus = 'Creado';
 
+const gravityOptions = [
+    { value: null, label: 'Sin asignar' },
+    ...Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: (i + 1).toString() }))
+];
+
 function IncidentForm({ onResult }) {
   const [company_report_id, setCompanyReportId] = useState('');
   const [selectedRobots, setSelectedRobots] = useState([]);
@@ -32,6 +37,8 @@ function IncidentForm({ onResult }) {
   const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false); // Estado de carga para técnicos
   const [availableRobots, setAvailableRobots] = useState([]);
   const [availableTechnicians, setAvailableTechnicians] = useState([]);
+  const userRole = localStorage.getItem('role');
+  const [gravity, setGravity] = useState(null);
 
   useEffect(() => {
     // Fetch para robots
@@ -316,7 +323,36 @@ function IncidentForm({ onResult }) {
           disabled={isLoading}
         />
 
-        <TextField label="Gravedad Inicial" value="Sin asignar (Supervisor asignará numéricamente)" fullWidth disabled InputProps={{ readOnly: true }} />
+        {['admin', 'supervisor'].includes(userRole) ? (
+          <FormControl fullWidth disabled={isLoading}>
+            <InputLabel id="gravity-label" shrink>Gravedad Inicial (1-10)</InputLabel>
+            <Select
+              labelId="gravity-label"
+              id="gravity"
+              value={gravity ?? ""}
+              onChange={(e) => setGravity(e.target.value === "" ? null : e.target.value)}
+              displayEmpty
+              renderValue={(selected) => {
+                if (selected === "") return "Sin asignar";
+                return selected.toString();
+              }}
+            >
+              {gravityOptions.map(option => (
+                <MenuItem key={option.label} value={option.value === null ? "" : option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        ) : (
+          <TextField
+            label="Gravedad (1-10)"
+            value="Sin asignar (Supervisor asignará numéricamente)"
+            fullWidth
+            disabled
+            InputProps={{ readOnly: true }}
+          />
+        )}
         <TextField label="Estado Inicial" value={defaultStatus} fullWidth disabled InputProps={{ readOnly: true }} />
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>

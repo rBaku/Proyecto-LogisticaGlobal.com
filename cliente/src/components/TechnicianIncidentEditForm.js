@@ -10,30 +10,31 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 
 // Opciones de estado que el técnico puede asignar
-const incidentStatuses = ['En Investigación', 'Esperando Repuesto', 'Resuelto', 'Cerrado']; // Podrían ser diferentes a los del supervisor
+const incidentStatuses = ['En Investigación', 'Esperando Repuesto', 'Resuelto']; // Podrían ser diferentes a los del supervisor
 
 function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
     const [formData, setFormData] = useState({});
     const [formError, setFormError] = useState('');
 
+    const [isReadOnly, setIsReadOnly] = useState(false);
+
     useEffect(() => {
-        // Inicializar el formulario con los datos del incidente
-        // Asegurarse de que solo los campos relevantes estén aquí si es necesario
+        const status = initialData?.status || '';
         setFormData({
-            id: initialData?.id || '', // Necesario para la URL del PUT
-            status: initialData?.status || '',
+            id: initialData?.id || '',
+            status,
             technician_comment: initialData?.technician_comment || '',
-            // Mostrar otros campos como informativos
             company_report_id: initialData?.company_report_id || '',
             robot_id: initialData?.robot_id || '',
             incident_timestamp: initialData?.incident_timestamp || '',
             location: initialData?.location || '',
             type: initialData?.type || '',
             cause: initialData?.cause || '',
-            gravity: initialData?.gravity, // Mostrarla, pero no será editable por el técnico
+            gravity: initialData?.gravity,
             assigned_technicians: initialData?.assigned_technicians || '',
         });
         setFormError('');
+        setIsReadOnly(status === 'Firmado');
     }, [initialData]);
 
     const handleChange = (event) => {
@@ -47,16 +48,23 @@ function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
     const handleInternalFormSubmit = (event) => {
         event.preventDefault();
         setFormError('');
-        if (!formData.status) { // El estado es clave para el técnico
+
+        if (isReadOnly) {
+            setFormError('Ya no puedes editar este incidente, comunícate con tu supervisor.');
+            return;
+        }
+
+        if (!formData.status) {
             setFormError('Debe seleccionar un estado para el incidente.');
             return;
         }
-        // Solo enviar los campos que el técnico puede modificar
+
         const dataToSubmit = {
             status: formData.status,
-            technician_comment: formData.technician_comment || null, // Enviar null si está vacío
+            technician_comment: formData.technician_comment || null,
         };
-        onSubmit(formData.id, dataToSubmit); // Pasar el ID y los datos a actualizar
+
+        onSubmit(formData.id, dataToSubmit);
     };
     
     const formatDateTimeForDisplay = (dateTimeString) => {
@@ -96,7 +104,7 @@ function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
 
 
                 {/* Campos Editables por el Técnico */}
-                <FormControl fullWidth required disabled={isLoading}>
+                <FormControl fullWidth required disabled={isLoading || isReadOnly}>
                     <InputLabel id="technician-status-edit-label" shrink={!!formData.status}>Actualizar Estado</InputLabel>
                     <Select
                         labelId="technician-status-edit-label"
@@ -115,7 +123,7 @@ function TechnicianIncidentEditForm({ initialData, onSubmit, isLoading }) {
                     value={formData.technician_comment || ''}
                     onChange={handleChange}
                     fullWidth multiline rows={4}
-                    disabled={isLoading}
+                    disabled={isLoading || isReadOnly}
                     InputLabelProps={{ shrink: true }}
                     helperText="Añada o actualice sus notas sobre el trabajo realizado o el estado actual."
                 />

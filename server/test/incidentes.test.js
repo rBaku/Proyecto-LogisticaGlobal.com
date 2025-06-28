@@ -48,6 +48,11 @@ describe('API /api/incidentes (Integración)', () => {
       VALUES ('10002', 'tecnico_test2','test2@example.com','password','tecnico','Técnico de Prueba 2')
       ON CONFLICT (id) DO NOTHING;
     `);
+    await query(`
+      INSERT INTO users (id, username, email, password, role, full_name)
+      VALUES ('9992', 'Test_Admin', 'testadmin@example.com', 'password', 'admin', 'Administrador de Prueba')
+      ON CONFLICT (id) DO NOTHING;
+    `);
 
     // Insertar incidente de prueba
     await query(`
@@ -132,6 +137,11 @@ describe('API /api/incidentes (Integración)', () => {
     const tecnicoIds = incidente.assigned_technicians.map(t => String(t.id));
     // Verifica que estén los técnicos esperados
     expect(tecnicoIds).to.include.members(['10001', '10002']);
+
+    expect(incidente).to.have.property('created_by_name'); // puede ser null
+    expect(incidente).to.have.property('updated_by_name');
+    expect(incidente).to.have.property('signed_by_name');
+    expect(incidente).to.have.property('finished_by_name');
   });
   it('GET /:id debería devolver el incidente correspondiente por UUID', async () => {
     const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
@@ -148,6 +158,10 @@ describe('API /api/incidentes (Integración)', () => {
 
     const tecnicoIds = res.body.assigned_technicians.map(t => t.id);
     expect(tecnicoIds).to.include.members([10001, 10002]);
+    expect(res.body).to.have.property('created_by_name');
+    expect(res.body).to.have.property('updated_by_name');
+    expect(res.body).to.have.property('signed_by_name');
+    expect(res.body).to.have.property('finished_by_name');
   });
 
   it('GET /:id debería devolver 404 si no existe el incidente', async () => {
@@ -270,6 +284,59 @@ describe('API /api/incidentes (Integración)', () => {
     expect(res.body).to.have.property('location', 'Zona Actualizada');
     expect(res.body).to.have.property('status', 'En revisión');
     expect(res.body).to.have.property('technician_comment', 'En análisis');
+  });
+  it('PUT /:id debería asignar updated_by y updated_at al actualizar', async () => {
+    const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
+    const incidenteId = rows[0].id;
+
+    const res = await request(app)
+      .put(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        status: 'En revisión'
+      });
+
+    expect(res.status).to.equal(200);
+    expect(res.body.status).to.equal('En revisión');
+    expect(res.body.updated_by).to.equal(9992); // ID del usuario del token
+    expect(res.body.updated_at).to.be.a('string');
+  });
+
+  it('PUT /:id con status "Firmado" debería asignar signed_by_user_id y signed_at', async () => {
+    const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
+    const incidenteId = rows[0].id;
+
+    const res = await request(app)
+      .put(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${token}`]) // token de admin
+      .send({
+        status: 'Firmado'
+      });
+
+    expect(res.status).to.equal(200);
+    expect(res.body.status).to.equal('Firmado');
+    expect(res.body.signed_by_user_id).to.equal(9992);
+    expect(res.body.signed_at).to.be.a('string');
+  });
+
+  it('PUT /:id con status "Resuelto" hecho por técnico debería asignar finished_by y finished_at', async () => {
+    // Crear token de usuario técnico
+    const tecnicoToken = jwt.sign({ id: 10001, role: 'tecnico' }, process.env.JWT_SECRET);
+
+    const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
+    const incidenteId = rows[0].id;
+
+    const res = await request(app)
+      .put(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${tecnicoToken}`])
+      .send({
+        status: 'Resuelto'
+      });
+
+    expect(res.status).to.equal(200);
+    expect(res.body.status).to.equal('Resuelto');
+    expect(res.body.finished_by).to.equal(10001);
+    expect(res.body.finished_at).to.be.a('string');
   });
 
   it('PUT /:id debería devolver 404 si el incidente no existe', async () => {

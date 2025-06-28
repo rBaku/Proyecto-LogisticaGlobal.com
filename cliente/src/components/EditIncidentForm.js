@@ -11,7 +11,7 @@ import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 
 const incidentTypes = ['Fallo mecánico', 'Colisión', 'Error de software', 'Batería baja', 'Obstrucción', 'Otro'];
-const incidentStatuses = ['Creado', 'En Investigación', 'Esperando Repuesto', 'Resuelto', 'Cerrado'];
+//const incidentStatuses = ['Creado', 'En Investigación', 'Esperando Repuesto', 'Resuelto', 'Cerrado'];
 const gravityOptions = [
     { value: null, label: 'Sin asignar' },
     ...Array.from({ length: 10 }, (_, i) => ({ value: i + 1, label: (i + 1).toString() }))
@@ -22,6 +22,8 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
     const [formError, setFormError] = useState('');
     const [availableTechnicians, setAvailableTechnicians] = useState([]);
     const [isLoadingTechnicians, setIsLoadingTechnicians] = useState(false);
+    const [incidentStatus, setIncidentStatus] = useState(initialData.status || '');
+    const userRole = localStorage.getItem('role');
 
     useEffect(() => {
         setIsLoadingTechnicians(true);
@@ -56,6 +58,24 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
         setFormError('');
     }, [initialData]);
 
+    const statusOptions = (() => {
+        if (userRole === 'admin') {
+            return ['Creado', 'En investigación', 'Esperando Repuesto', 'Resuelto', 'Firmado'];
+        }
+
+        if (userRole === 'supervisor') {
+            if (initialData.status === 'Resuelto') {
+            return ['Resuelto','Firmado']; // Solo puede pasar de Resuelto a Firmado
+            }
+            if (initialData.status === 'Firmado') {
+            return ['Firmado']; // Solo puede pasar de Resuelto a Firmado
+            }
+            return ['Creado', 'En investigación', 'Esperando Repuesto'];
+        }
+
+        return []; // técnico u otro rol no pueden cambiar estado
+        })();
+
     const handleChange = (event) => {
         const { name, value } = event.target;
 
@@ -69,15 +89,28 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
     const handleInternalFormSubmit = (event) => {
         event.preventDefault();
         setFormError('');
-        if (!formData.location || !formData.type || !formData.cause || !formData.status) {
+
+        // Combina incidentStatus al formData
+        const dataToSend = { ...formData, status: incidentStatus };
+
+        if (!dataToSend.location || !dataToSend.type || !dataToSend.cause || !dataToSend.status) {
             setFormError('Por favor, complete todos los campos editables requeridos (Ubicación, Tipo, Causa, Estado).');
             return;
         }
-        onSubmit(formData);
-    };
+
+        onSubmit(dataToSend);
+        };
 
     const gravitySelectValue = (formData.gravity === null || formData.gravity === undefined) ? "" : formData.gravity;
 
+
+    if (initialData.status === 'Firmado' && userRole !== 'admin') {
+        return (
+            <Typography color="error" sx={{ mt: 2 }}>
+            No puedes actualizar un incidente <strong>Firmado</strong>, contáctate con un administrador.
+            </Typography>
+        );
+        }
     return (
         <Box component="form" onSubmit={handleInternalFormSubmit} noValidate autoComplete="off">
             <Stack spacing={2.5} sx={{ pt: 1 }}>
@@ -150,41 +183,41 @@ function EditIncidentForm({ initialData, onSubmit, isLoading }) {
                     </Select>
                     </FormControl>
 
-                <FormControl fullWidth required disabled={isLoading}>
-                    <InputLabel id="status-edit-label" shrink={!!formData.status}>Estado</InputLabel>
-                    <Select labelId="status-edit-label" name="status" value={formData.status || ''} label="Estado" onChange={handleChange}>
-                         {incidentStatuses.map((option) => ( <MenuItem key={option} value={option}>{option}</MenuItem> ))}
-                    </Select>
-                </FormControl>
-
-                 <FormControl fullWidth disabled={isLoading}>
-                    <InputLabel id="gravity-edit-label" shrink={formData.gravity != null}>Gravedad (1-10)</InputLabel>
+                <FormControl fullWidth>
+                    <InputLabel id="status-label">Estado</InputLabel>
                     <Select
-                        labelId="gravity-edit-label"
-                        name="gravity"
-                        value={gravitySelectValue}
-                        label="Gravedad (1-10)"
-                        onChange={handleChange}
-                        displayEmpty
+                        labelId="status-label"
+                        value={incidentStatus}
+                        onChange={(e) => setIncidentStatus(e.target.value)}
+                        disabled={statusOptions.length === 0}
                     >
-                        {gravityOptions.map((option) => (
-                            <MenuItem key={option.label} value={option.value === null ? "" : option.value}>
-                                {option.label}
-                            </MenuItem>
+                        {statusOptions.map(option => (
+                        <MenuItem key={option} value={option}>{option}</MenuItem>
                         ))}
                     </Select>
                 </FormControl>
 
-                <TextField
-                    label="Comentario del Técnico"
-                    name="technician_comment"
-                    value={formData.technician_comment || ''}
-                    onChange={handleChange}
-                    fullWidth multiline rows={3}
-                    disabled={isLoading}
-                    InputLabelProps={{ shrink: true }}
-                    helperText="Notas o detalles adicionales del técnico."
-                />
+                 <FormControl fullWidth disabled={isLoading}>
+                    <InputLabel id="gravity-edit-label" shrink>Gravedad (1-10)</InputLabel>
+                    <Select
+                        labelId="gravity-edit-label"
+                        name="gravity"
+                        value={gravitySelectValue}
+                        onChange={handleChange}
+                        displayEmpty
+                        renderValue={(selected) => {
+                        if (selected === "") return "Sin asignar";
+                        return selected.toString();
+                        }}
+                    >
+                        {gravityOptions.map((option) => (
+                        <MenuItem key={option.label} value={option.value === null ? "" : option.value}>
+                            {option.label}
+                        </MenuItem>
+                        ))}
+                    </Select>
+                    </FormControl>
+
                 <button type="submit" style={{ display: 'none' }} aria-hidden="true"></button>
             </Stack>
         </Box>

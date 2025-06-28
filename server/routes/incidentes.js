@@ -20,13 +20,7 @@ router.post(
       assigned_technicians,
       gravity,
       technician_comment,
-      signed_by_user_id,
-      signed_at,
-      created_by,
-      updated_by,
-      fall_back_type,
-      finished_by,
-      finished_at
+      fall_back_type
     } = req.body;
 
     // Validaciones básicas
@@ -62,17 +56,17 @@ router.post(
       try {
         await client.query('BEGIN');
 
+        const createdBy = req.user?.id;
+
         const insertIncident = `
           INSERT INTO Incidents (
             company_report_id, robot_id, incident_timestamp, location,
             type, cause, gravity, status, technician_comment,
-            signed_by_user_id, signed_at, created_by, updated_by,
-            fall_back_type, finished_by, finished_at
+            created_by, updated_by, fall_back_type
           ) VALUES (
             $1, $2, $3, $4,
             $5, $6, $7, 'Creado', $8,
-            $9, $10, $11, $12,
-            $13, $14, $15
+            $9, $9, $10
           ) RETURNING *;
         `;
 
@@ -85,13 +79,8 @@ router.post(
           cause,
           gravity ?? null,
           technician_comment ?? null,
-          signed_by_user_id ?? null,
-          signed_at ?? null,
-          created_by ?? null,
-          updated_by ?? null,
-          fall_back_type ?? null,
-          finished_by ?? null,
-          finished_at ?? null
+          createdBy,
+          fall_back_type ?? null
         ];
 
         const result = await client.query(insertIncident, incidentValues);
@@ -130,11 +119,12 @@ router.get('/', authMiddleware, async (_req, res, next) => {
     const incidentesResult = await pool.query('SELECT * FROM Incidents ORDER BY incident_timestamp DESC, company_report_id, id;');
     const incidentes = incidentesResult.rows;
 
-    // Si no hay incidentes, responder directamente
     if (incidentes.length === 0) return res.json([]);
 
-    // Obtener todos los técnicos asignados a esos incidentes
+    // IDs de incidentes para técnicos
     const ids = incidentes.map(i => `'${i.id}'`).join(',');
+
+    // Obtener técnicos por incidente
     const tecnicosResult = await pool.query(`
       SELECT it.incident_id, u.id, u.full_name, u.email
       FROM Incident_Technicians it
@@ -142,7 +132,6 @@ router.get('/', authMiddleware, async (_req, res, next) => {
       WHERE it.incident_id IN (${ids});
     `);
 
-    // Agrupar técnicos por incidente_id
     const tecnicosPorIncidente = {};
     for (const row of tecnicosResult.rows) {
       if (!tecnicosPorIncidente[row.incident_id]) {
@@ -155,13 +144,34 @@ router.get('/', authMiddleware, async (_req, res, next) => {
       });
     }
 
-    // Agregar array de técnicos a cada incidente
-    const incidentesConTecnicos = incidentes.map(inc => ({
+    // Obtener todos los user_ids únicos de campos relacionados
+    const userIds = new Set();
+    for (const inc of incidentes) {
+      ['created_by', 'updated_by', 'signed_by_user_id', 'finished_by'].forEach(key => {
+        if (inc[key]) userIds.add(inc[key]);
+      });
+    }
+
+    const userIdList = [...userIds];
+    let usuariosMap = {};
+    if (userIdList.length > 0) {
+      const usersQuery = await pool.query(`
+        SELECT id, full_name FROM Users WHERE id = ANY($1)
+      `, [userIdList]);
+      usuariosMap = Object.fromEntries(usersQuery.rows.map(u => [u.id, u.full_name]));
+    }
+
+    // Agrega nombres al resultado final
+    const incidentesConDatos = incidentes.map(inc => ({
       ...inc,
-      assigned_technicians: tecnicosPorIncidente[inc.id] || []
+      assigned_technicians: tecnicosPorIncidente[inc.id] || [],
+      created_by_name: usuariosMap[inc.created_by] || null,
+      updated_by_name: usuariosMap[inc.updated_by] || null,
+      signed_by_name: usuariosMap[inc.signed_by_user_id] || null,
+      finished_by_name: usuariosMap[inc.finished_by] || null
     }));
 
-    res.json(incidentesConTecnicos);
+    res.json(incidentesConDatos);
   } catch (error) {
     console.error('Error en GET /api/incidentes:', error);
     next(error);
@@ -173,11 +183,16 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
   const { id } = req.params;
   try {
     const pool = await initializePool();
+
+    // 1. Obtener el incidente
     const incidentResult = await pool.query('SELECT * FROM Incidents WHERE id = $1', [id]);
     if (incidentResult.rowCount === 0) {
       return res.status(404).json({ message: 'Incidente no encontrado.' });
     }
 
+    const incident = incidentResult.rows[0];
+
+    // 2. Obtener técnicos asignados
     const techsResult = await pool.query(`
       SELECT u.id, u.full_name, u.email
       FROM Incident_Technicians it
@@ -185,8 +200,33 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
       WHERE it.incident_id = $1;
     `, [id]);
 
-    const incident = incidentResult.rows[0];
     incident.assigned_technicians = techsResult.rows;
+
+    // 3. Obtener nombres de usuarios relacionados (si hay IDs)
+    const userIds = [];
+    ['created_by', 'updated_by', 'signed_by_user_id', 'finished_by'].forEach(key => {
+      if (incident[key]) userIds.push(incident[key]);
+    });
+
+    if (userIds.length > 0) {
+      const userResult = await pool.query(
+        'SELECT id, full_name FROM Users WHERE id = ANY($1)',
+        [userIds]
+      );
+
+      const userMap = Object.fromEntries(userResult.rows.map(u => [u.id, u.full_name]));
+
+      incident.created_by_name = userMap[incident.created_by] || null;
+      incident.updated_by_name = userMap[incident.updated_by] || null;
+      incident.signed_by_name = userMap[incident.signed_by_user_id] || null;
+      incident.finished_by_name = userMap[incident.finished_by] || null;
+    } else {
+      incident.created_by_name = null;
+      incident.updated_by_name = null;
+      incident.signed_by_name = null;
+      incident.finished_by_name = null;
+    }
+
     res.json(incident);
   } catch (error) {
     console.error(`Error en GET /api/incidentes/${id}:`, error);
@@ -195,7 +235,7 @@ router.get('/:id', authMiddleware, async (req, res, next) => {
 });
 
 // PUT /api/incidentes/:id
-router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async (req, res, next) => {
+router.put('/:id', authMiddleware, async (req, res, next) => {
   const { id } = req.params;
   const {
     robot_id,
@@ -206,9 +246,8 @@ router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async 
     assigned_technicians,
     status,
     gravity,
-    technician_comment,
+    technician_comment
   } = req.body;
-  // console.log('BODY:', req.body);
 
   if (!status) {
     return res.status(400).json({ error: 'El campo status es obligatorio para actualizar.' });
@@ -220,32 +259,33 @@ router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async 
     (typeof gravity !== 'number' || gravity < 1 || gravity > 10)
   ) {
     return res.status(400).json({
-      error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10 o null.',
+      error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10 o null.'
     });
   }
 
   try {
-    const pool = await initializePool(); // <- usa initializePool correctamente
+    const pool = await initializePool();
     const client = await pool.connect();
 
     try {
       await client.query('BEGIN');
 
-      const updateIncident = `
-        UPDATE Incidents
-        SET 
-          robot_id = COALESCE($1, robot_id),
-          incident_timestamp = COALESCE($2, incident_timestamp),
-          location = COALESCE($3, location),
-          type = COALESCE($4, type),
-          cause = COALESCE($5, cause),
-          status = COALESCE($6, status),
-          gravity = $7,
-          technician_comment = COALESCE($8, technician_comment),
-          updated_at = NOW()
-        WHERE id = $9
-        RETURNING *;
-      `;
+      const currentUserId = req.user.id;
+      const currentUserRole = req.user.role;
+
+      // Campos base
+      const fields = [
+        'robot_id = COALESCE($1, robot_id)',
+        'incident_timestamp = COALESCE($2, incident_timestamp)',
+        'location = COALESCE($3, location)',
+        'type = COALESCE($4, type)',
+        'cause = COALESCE($5, cause)',
+        'status = COALESCE($6, status)',
+        'gravity = $7',
+        'technician_comment = COALESCE($8, technician_comment)',
+        'updated_at = NOW()',
+        'updated_by = $9'
+      ];
 
       const values = [
         robot_id,
@@ -256,8 +296,30 @@ router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async 
         status,
         gravity,
         technician_comment,
-        id,
+        currentUserId
       ];
+
+      // Campos adicionales (firmado, resuelto)
+      if (status === 'Firmado') {
+        fields.push(`signed_by_user_id = $${values.length + 1}`);
+        values.push(currentUserId);
+        fields.push(`signed_at = NOW()`);
+      }
+
+      if (status === 'Resuelto' && currentUserRole === 'tecnico') {
+        fields.push(`finished_by = $${values.length + 1}`);
+        values.push(currentUserId);
+        fields.push(`finished_at = NOW()`);
+      }
+
+      // Último valor: id
+      values.push(id);
+      const updateIncident = `
+        UPDATE Incidents
+        SET ${fields.join(', ')}
+        WHERE id = $${values.length}
+        RETURNING *;
+      `;
 
       const result = await client.query(updateIncident, values);
 
@@ -266,14 +328,13 @@ router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async 
         return res.status(404).json({ message: 'Incidente no encontrado para actualizar.' });
       }
 
+      // Reemplazar técnicos asignados
       if (Array.isArray(assigned_technicians)) {
         await client.query('DELETE FROM Incident_Technicians WHERE incident_id = $1', [id]);
-
         const insertTech = `
           INSERT INTO Incident_Technicians (incident_id, technician_user_id)
           VALUES ($1, $2);
         `;
-
         for (const technicianId of assigned_technicians) {
           await client.query(insertTech, [id, technicianId]);
         }
