@@ -23,7 +23,6 @@ router.post(
       fall_back_type
     } = req.body;
 
-    // Validaciones básicas
     if (
       !company_report_id ||
       !robot_id ||
@@ -94,6 +93,14 @@ router.post(
         for (const technicianId of assigned_technicians) {
           await client.query(insertTech, [incident.id, technicianId]);
         }
+
+        // ✅ Insertar entrada en incident_history
+        const insertHistory = `
+          INSERT INTO incident_history (
+            incident_id, change_type, changes, changed_by
+          ) VALUES ($1, 'Creation', '', $2);
+        `;
+        await client.query(insertHistory, [incident.id, createdBy]);
 
         await client.query('COMMIT');
         res.status(201).json(incident);
@@ -273,7 +280,62 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
       const currentUserId = req.user.id;
       const currentUserRole = req.user.role;
 
-      // Campos base
+      // Obtener estado actual del incidente con técnicos
+      const currentResult = await client.query(
+        `
+        SELECT i.*,
+               JSON_AGG(
+                 JSON_BUILD_OBJECT('id', t.technician_user_id, 'name', u.full_name)
+               ) FILTER (WHERE t.technician_user_id IS NOT NULL) AS current_technicians
+        FROM incidents i
+        LEFT JOIN incident_technicians t ON i.id = t.incident_id
+        LEFT JOIN users u ON t.technician_user_id = u.id
+        WHERE i.id = $1
+        GROUP BY i.id;
+        `,
+        [id]
+      );
+
+      if (currentResult.rowCount === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Incidente no encontrado.' });
+      }
+
+      const currentIncident = currentResult.rows[0];
+
+      // Cambios detectados
+      let changeDescription = '';
+      const addChange = (label, oldVal, newVal) => {
+        if (oldVal !== newVal) {
+          changeDescription += `${label}: ${oldVal ?? '—'} -> ${newVal ?? '—'}\n`;
+        }
+      };
+
+      addChange('Estado', currentIncident.status, status);
+      addChange('Gravedad', currentIncident.gravity, gravity);
+      addChange('Ubicación', currentIncident.location, location);
+      addChange('Tipo', currentIncident.type, type);
+      addChange('Causa', currentIncident.cause, cause);
+      addChange('Comentario Técnico', currentIncident.technician_comment, technician_comment);
+
+      const prevTechs = (currentIncident.current_technicians || []).map(t => t.name).sort();
+
+      let nextTechs = [];
+      if (Array.isArray(assigned_technicians) && assigned_technicians.length > 0) {
+        const techQuery = `
+          SELECT full_name FROM users
+          WHERE id = ANY($1::int[])
+          ORDER BY full_name;
+        `;
+        const techResult = await client.query(techQuery, [assigned_technicians]);
+        nextTechs = techResult.rows.map(r => r.full_name);
+      }
+
+      if (JSON.stringify(prevTechs) !== JSON.stringify(nextTechs)) {
+        changeDescription += `Técnicos Asignados: ${prevTechs.join(', ') || '—'} -> ${nextTechs.join(', ') || '—'}\n`;
+      }
+
+      // Construcción del update
       const fields = [
         'robot_id = COALESCE($1, robot_id)',
         'incident_timestamp = COALESCE($2, incident_timestamp)',
@@ -299,7 +361,6 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         currentUserId
       ];
 
-      // Campos adicionales (firmado, resuelto)
       if (status === 'Firmado') {
         fields.push(`signed_by_user_id = $${values.length + 1}`);
         values.push(currentUserId);
@@ -312,8 +373,8 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         fields.push(`finished_at = NOW()`);
       }
 
-      // Último valor: id
       values.push(id);
+
       const updateIncident = `
         UPDATE Incidents
         SET ${fields.join(', ')}
@@ -322,11 +383,7 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
       `;
 
       const result = await client.query(updateIncident, values);
-
-      if (result.rowCount === 0) {
-        await client.query('ROLLBACK');
-        return res.status(404).json({ message: 'Incidente no encontrado para actualizar.' });
-      }
+      const updatedIncident = result.rows[0];
 
       // Reemplazar técnicos asignados
       if (Array.isArray(assigned_technicians)) {
@@ -340,8 +397,17 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         }
       }
 
+      // Guardar historial si hay cambios
+      if (changeDescription.trim()) {
+        const insertHistory = `
+          INSERT INTO incident_history (incident_id, status, changes, changed_by)
+          VALUES ($1, $2, $3, $4);
+        `;
+        await client.query(insertHistory, [id, status, changeDescription.trim(), currentUserId]);
+      }
+
       await client.query('COMMIT');
-      res.json(result.rows[0]);
+      res.json(updatedIncident);
     } catch (error) {
       await client.query('ROLLBACK');
       console.error(`Error en PUT /api/incidentes/${id}:`, error);
@@ -352,6 +418,33 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
   } catch (err) {
     console.error('Error al inicializar pool:', err);
     next(err);
+  }
+});
+// GET /api/incidentes/:id/history
+router.get('/:id/history', authMiddleware, async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const pool = await initializePool();
+    const query = `
+      SELECT 
+        h.id,
+        h.status,
+        h.change_date,
+        h.changes,
+        h.changed_by,
+        u.full_name AS changed_by_name
+      FROM incident_history h
+      LEFT JOIN users u ON h.changed_by = u.id
+      WHERE h.incident_id = $1
+      ORDER BY h.change_date DESC;
+    `;
+
+    const result = await pool.query(query, [id]);
+    res.json(result.rows);
+  } catch (error) {
+    console.error(`Error en GET /api/incidentes/${id}/history:`, error);
+    next(error);
   }
 });
 

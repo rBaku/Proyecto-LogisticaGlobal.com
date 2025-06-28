@@ -81,6 +81,9 @@ function IncidentListPage() {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const editFormRef = useRef();
 
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [incidentHistory, setIncidentHistory] = useState([]);
+
   const userRole = localStorage.getItem('role');
   
   const canEditOrDelete = userRole === 'admin' || userRole === 'supervisor';
@@ -112,6 +115,25 @@ function IncidentListPage() {
       setIsLoadingData(false);
     }
   }, [showSnackbar]);
+  const handleViewHistory = async (incidentId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/incidentes/${incidentId}/history`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Error al obtener el historial');
+      const data = await response.json();
+      setIncidentHistory(data);
+      setHistoryModalOpen(true);
+    } catch (error) {
+      console.error('Error al cargar historial:', error);
+      showSnackbar('No se pudo cargar el historial del incidente.', 'error');
+    }
+  };
+
+  const handleCloseHistoryModal = () => {
+    setHistoryModalOpen(false);
+    setIncidentHistory([]);
+  };
 
   useEffect(() => {
     fetchIncidentsFromAPI();
@@ -311,6 +333,11 @@ function IncidentListPage() {
                                 <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
                               </>
                             )}
+                            <Tooltip title="Ver Historial">
+                              <IconButton size="small" onClick={() => handleViewHistory(incident.id)}>
+                                🕘
+                              </IconButton>
+                            </Tooltip>
                         </TableCell>
                     </TableRow>
                     ))
@@ -374,6 +401,25 @@ function IncidentListPage() {
                   {isSaving ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
           </DialogActions>
+      </Dialog>
+      <Dialog open={historyModalOpen} onClose={handleCloseHistoryModal} TransitionComponent={Transition} fullWidth maxWidth="md">
+        <DialogTitle>Historial del Incidente</DialogTitle>
+        <DialogContent dividers>
+          {incidentHistory.length > 0 ? (
+            incidentHistory.map((entry) => (
+              <Box key={entry.id} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">{entry.change_type} — {new Date(entry.change_date).toLocaleString('es-CL')}</Typography>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{entry.changes || '—'}</Typography>
+                <Typography variant="caption" color="text.secondary">Hecho por: {entry.changed_by_name || 'Desconocido'}</Typography>
+              </Box>
+            ))
+          ) : (
+            <Typography variant="body2">No hay historial para este incidente.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistoryModal}>Cerrar</Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
