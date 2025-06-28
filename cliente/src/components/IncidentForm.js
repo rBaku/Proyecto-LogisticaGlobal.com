@@ -46,7 +46,7 @@ function IncidentForm({ onResult }) {
         return res.json();
       })
       .then(data => {
-        setAvailableRobots(data.filter(r => r.is_operational)); // Solo robots operativos
+        setAvailableRobots(data.filter(r => r.state)); // Solo robots operativos
       })
       .catch(error => {
         console.error("Error fetching robots:", error);
@@ -202,7 +202,7 @@ function IncidentForm({ onResult }) {
           id="robots-autocomplete"
           options={availableRobots}
           loading={isLoadingRobots}
-          getOptionLabel={(option) => `${option.name} ${option.is_operational ? '' : '(No Operativo)'}`}
+          getOptionLabel={(option) => `${option.name} ${option.state ? '' : '(No Operativo)'}`}
           value={selectedRobots}
           onChange={(event, newValue) => {
             setSelectedRobots(newValue);
