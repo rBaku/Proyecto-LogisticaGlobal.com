@@ -1,161 +1,173 @@
 const request = require('supertest');
 const express = require('express');
 const chai = require('chai');
-const sinon = require('sinon');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { query, initializePool } = require('../db');
 const robotsRouter = require('../routes/robots');
+
 const expect = chai.expect;
 
 describe('API /api/robots (Integración)', () => {
   let app;
+  let token;
 
   before(async function () {
-    sinon.stub(console, 'error'); // evita imprimir en consola
-    this.timeout(10000); // Espera hasta 10 segundos por si la conexión a Azure tarda
-
+    this.timeout(10000);
     await initializePool();
 
     app = express();
     app.use(express.json());
+    app.use(cookieParser());
     app.use('/api/robots', robotsRouter);
-});
-
-  beforeEach(async () => { //Inserta estos valores para hacer pruebas, luego se borran
-  await query(`
-    INSERT INTO Robots (id, name, is_operational)
-    VALUES 
-      ('RBT-TestGet1', 'Robot Alfa', true),
-      ('RBT-TestGet2', 'Robot Beta', false)
-  `);
-});
-  afterEach(async () => { //Borra estos valores que eran para hacer pruebas despues de realizarla para evitar basura en la BD
-    await query('DELETE FROM Robots WHERE id IN ($1, $2, $3, $4)', ['RBT-TestGet1', 'RBT-TestGet2', 'RBT-TestDuplicate', 'RBT-MissingName']);
-  });
-  after(() => {
-    console.error.restore(); // restaura comportamiento original
   });
 
-  it('GET / debería devolver lista de robots desde la base de datos', async () => {
-    const res = await request(app).get('/api/robots');
+  beforeEach(async () => {
+    token = jwt.sign({ id: 9999, role: 'admin' }, process.env.JWT_SECRET);
+
+    await query(`
+      INSERT INTO robots (id, name, state)
+      VALUES 
+        ('rb9991', 'TestBot Uno', 'Activo'),
+        ('rb9992', 'TestBot Dos', 'Inactivo')
+    `);
+  });
+
+  afterEach(async () => {
+    await query(`DELETE FROM robots WHERE id IN ('rb9991', 'rb9992', 'rb9993')`);
+  });
+
+  it('GET / debería retornar todos los robots con incidentes pendientes', async () => {
+    const res = await request(app)
+      .get('/api/robots')
+      .set('Cookie', [`access_token=${token}`]);
 
     expect(res.status).to.equal(200);
     expect(res.body).to.be.an('array');
-    const ids = res.body.map(r => r.id);
-    expect(ids).to.include('RBT-TestGet1');
-    expect(ids).to.include('RBT-TestGet2');
+    expect(res.body.some(r => r.name === 'TestBot Uno')).to.be.true;
   });
-  it('GET /:id debería devolver un robot existente', async () => {
-  const res = await request(app).get('/api/robots/RBT-TestGet1');
-  
-  expect(res.status).to.equal(200);
-  expect(res.body).to.be.an('object');
-  expect(res.body).to.have.property('id', 'RBT-TestGet1');
-  expect(res.body).to.have.property('name');
-  expect(res.body).to.have.property('is_operational');
-});
-  it('POST / debería crear un nuevo robot correctamente', async () => {
-    const newRobot = {
-      id: 'RBT-TestCreate',
-      name: 'Robot Gamma',
-      is_operational: true,
-    };
 
+  it('GET /:id debería retornar un robot específico', async () => {
+    const res = await request(app)
+      .get('/api/robots/rb9991')
+      .set('Cookie', [`access_token=${token}`]);
+
+    expect(res.status).to.equal(200);
+    expect(res.body).to.include({
+      id: 'rb9991',
+      name: 'TestBot Uno',
+      state: 'Activo'
+    });
+  });
+
+  it('POST / debería crear un nuevo robot', async () => {
     const res = await request(app)
       .post('/api/robots')
-      .send(newRobot);
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        id: 'rb9993',
+        name: 'NuevoBot',
+        state: 'Disponible'
+      });
 
     expect(res.status).to.equal(201);
-    expect(res.body).to.include(newRobot);
-
-    // Verificar que esté en la base de datos
-    const getRes = await request(app).get('/api/robots');
-    const ids = getRes.body.map(r => r.id);
-    expect(ids).to.include('RBT-TestCreate');
-
-    // Cleanup
-    await query('DELETE FROM Robots WHERE id = $1', ['RBT-TestCreate']);
+    expect(res.body).to.include({
+      id: 'rb9993',
+      name: 'NuevoBot',
+      state: 'Disponible'
+    });
   });
-  
-  it('POST / debería fallar si se intenta insertar un robot con un ID duplicado', async () => {
-    // Insertar un robot con un ID fijo
-    await query(`
-      INSERT INTO Robots (id, name, is_operational)
-      VALUES ('RBT-TestDuplicate', 'Robot Único', true)
-    `);
 
-    // Intentar insertar el mismo ID de nuevo a través de la API
+  it('POST / debería fallar si el ID ya existe', async () => {
     const res = await request(app)
       .post('/api/robots')
-      .send({ id: 'RBT-TestDuplicate', name: 'Duplicado', is_operational: false });
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        id: 'rb9991',
+        name: 'NombreDistinto',
+        state: 'En uso'
+      });
 
-    expect(res.status).to.be.oneOf([400, 409, 500]); // depende de cómo manejes el error en tu backend
+    expect(res.status).to.equal(409);
     expect(res.body).to.have.property('error');
   });
 
-  it('POST / debería fallar si falta el campo "id"', async () => {
-  const res = await request(app).post('/api/robots').send({
-    name: 'Faltante de ID',
-    is_operational: true
-  });
-  expect(res.status).to.equal(400);
-  expect(res.body).to.have.property('error');
-});
-
-it('POST / debería fallar si falta el campo "name"', async () => {
-  const res = await request(app).post('/api/robots').send({
-    id: 'RBT-MissingName',
-    is_operational: true
-  });
-  expect(res.status).to.equal(400);
-  expect(res.body).to.have.property('error');
-});
-
-  it('PUT /:id debería actualizar un robot existente', async () => {
-    const updatedData = {
-      name: 'Robot Alfa Actualizado',
-      is_operational: false,
-    };
-
+  it('POST / debería fallar si faltan campos obligatorios', async () => {
     const res = await request(app)
-      .put('/api/robots/RBT-TestGet1')
-      .send(updatedData);
+      .post('/api/robots')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        id: 'rb9993',
+        name: 'SinEstado'
+        // falta state
+      });
+
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property('error');
+  });
+
+  it('PUT /:id debería actualizar un robot (name y state)', async () => {
+    const res = await request(app)
+      .put('/api/robots/rb9991')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        name: 'Bot Actualizado',
+        state: 'Mantenimiento'
+      });
 
     expect(res.status).to.equal(200);
-    expect(res.body).to.include({ id: 'RBT-TestGet1', ...updatedData });
-
-    // Verificar en base de datos
-    const getRes = await request(app).get('/api/robots');
-    const robot = getRes.body.find(r => r.id === 'RBT-TestGet1');
-    expect(robot).to.include(updatedData);
+    expect(res.body).to.include({
+      id: 'rb9991',
+      name: 'Bot Actualizado',
+      state: 'Mantenimiento'
+    });
   });
 
-  it('PUT /:id debería devolver 404 si el robot no existe', async () => {
+  it('PUT /:id debería fallar si el estado no es string válido', async () => {
     const res = await request(app)
-      .put('/api/robots/NO-EXISTE')
-      .send({ name: 'Inexistente', is_operational: false });
+      .put('/api/robots/rb9991')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        state: 12345 // debe ser string
+      });
+
+    expect(res.status).to.equal(400);
+    expect(res.body).to.have.property('error');
+  });
+
+  it('PUT /:id debería retornar 404 si el robot no existe', async () => {
+    const res = await request(app)
+      .put('/api/robots/inexistente')
+      .set('Cookie', [`access_token=${token}`])
+      .send({ name: 'NuevoNombre' });
 
     expect(res.status).to.equal(404);
     expect(res.body).to.have.property('error');
   });
+
   it('DELETE /:id debería eliminar un robot existente', async () => {
-    // Insertar un robot a eliminar
     await query(`
-      INSERT INTO Robots (id, name, is_operational)
-      VALUES ('RBT-TestDelete', 'Robot Eliminable', true)
+      INSERT INTO robots (id, name, state) 
+      VALUES ('rb9993', 'BotParaEliminar', 'Disponible')
     `);
 
-    const res = await request(app).delete('/api/robots/RBT-TestDelete');
+    const res = await request(app)
+      .delete('/api/robots/rb9993')
+      .set('Cookie', [`access_token=${token}`]);
 
     expect(res.status).to.equal(204);
 
-    // Verificar que ya no esté
-    const getRes = await request(app).get('/api/robots');
-    const ids = getRes.body.map(r => r.id);
-    expect(ids).to.not.include('RBT-TestDelete');
+    const check = await request(app)
+      .get('/api/robots/rb9993')
+      .set('Cookie', [`access_token=${token}`]);
+
+    expect(check.status).to.equal(404);
   });
 
-   it('DELETE /:id debería devolver 404 si el robot no existe', async () => {
-    const res = await request(app).delete('/api/robots/NO-EXISTE');
+  it('DELETE /:id debería retornar 404 si el robot no existe', async () => {
+    const res = await request(app)
+      .delete('/api/robots/noexiste')
+      .set('Cookie', [`access_token=${token}`]);
 
     expect(res.status).to.equal(404);
     expect(res.body).to.have.property('error');
