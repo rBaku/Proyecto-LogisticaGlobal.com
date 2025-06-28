@@ -4,10 +4,10 @@ const pool = require('../db');
 
 // POST /api/robots - Crear un nuevo robot
 router.post('/', async (req, res, next) => {
-  const { id, name, is_operational } = req.body;
+  const { id, name, state } = req.body;
 
-  if (!id || !name || typeof is_operational !== 'boolean') {
-    return res.status(400).json({ error: 'Los campos id (string), name (string), y is_operational (boolean) son obligatorios.' });
+  if (!id || !name || typeof state !== 'boolean') {
+    return res.status(400).json({ error: 'Los campos id (string), name (string), y state (boolean) son obligatorios.' });
   }
 
   try {
@@ -21,11 +21,11 @@ router.post('/', async (req, res, next) => {
 
     // Si no existe, insertar el nuevo robot
     const queryText = `
-      INSERT INTO Robots (id, name, is_operational) 
+      INSERT INTO Robots (id, name, state) 
       VALUES ($1, $2, $3) 
       RETURNING *;
     `;
-    const values = [id, name, is_operational];
+    const values = [id, name, state];
     const result = await pool.query(queryText, values);
     res.status(201).json(result.rows[0]);
 
@@ -39,8 +39,8 @@ router.post('/', async (req, res, next) => {
 // GET /api/robots - Obtener todos los robots
 router.get('/', async (_req, res, next) => {
   try {
-    // Podrías añadir filtros como ?is_operational=true
-    const result = await pool.query('SELECT id, name, is_operational FROM Robots ORDER BY name;');
+    // Podrías añadir filtros como ?state=true
+    const result = await pool.query('SELECT id, name, state FROM Robots ORDER BY name;');
     res.json(result.rows);
   } catch (error) {
     console.error('Error en GET /api/robots:', error);
@@ -52,7 +52,7 @@ router.get('/', async (_req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT id, name, is_operational FROM Robots WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, name, state FROM Robots WHERE id = $1', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Robot no encontrado.' });
     }
@@ -66,13 +66,13 @@ router.get('/:id', async (req, res, next) => {
 // PUT /api/robots/:id - Actualizar un robot
 router.put('/:id', async (req, res, next) => {
   const { id } = req.params;
-  const { name, is_operational } = req.body;
+  const { name, state } = req.body;
 
-  if (name === undefined && is_operational === undefined) {
-    return res.status(400).json({ error: 'Se debe proporcionar al menos un campo (name o is_operational) para actualizar.' });
+  if (name === undefined && state === undefined) {
+    return res.status(400).json({ error: 'Se debe proporcionar al menos un campo (name o state) para actualizar.' });
   }
-  if (is_operational !== undefined && typeof is_operational !== 'boolean') {
-    return res.status(400).json({ error: 'is_operational debe ser un valor booleano.' });
+  if (state !== undefined && typeof state !== 'boolean') {
+    return res.status(400).json({ error: 'state debe ser un valor booleano.' });
   }
 
 
@@ -86,9 +86,9 @@ router.put('/:id', async (req, res, next) => {
         queryFields.push(`name = $${paramIndex++}`);
         values.push(name);
     }
-    if (is_operational !== undefined) {
-        queryFields.push(`is_operational = $${paramIndex++}`);
-        values.push(is_operational);
+    if (state !== undefined) {
+        queryFields.push(`state = $${paramIndex++}`);
+        values.push(state);
     }
     
     if (queryFields.length === 0) { // Doble chequeo, aunque la validación anterior debería cubrirlo

@@ -189,12 +189,12 @@ function RobotStatusPage() {
                         <TableCell>{robot.id}</TableCell>
                         <TableCell>{robot.name}</TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
-                            {robot.is_operational ? 
+                            {robot.state ? 
                                 <CheckCircleIcon color="success" /> : 
                                 <CancelIcon color="error" />
                             }
                             <Typography variant="caption" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' }}}>
-                                {robot.is_operational ? "Operativo" : "No Operativo"}
+                                {robot.state ? "Operativo" : "No Operativo"}
                             </Typography>
                         </TableCell>
                         {userRole === 'admin' && (

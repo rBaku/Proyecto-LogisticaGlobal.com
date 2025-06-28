@@ -13,7 +13,7 @@ import Switch from '@mui/material/Switch';
 function RobotForm({ onSubmit, onCancel, isLoading, initialData = {} }) {
     const [id, setId] = useState(initialData.id || '');
     const [name, setName] = useState(initialData.name || '');
-    const [is_operational, setIsOperational] = useState(initialData.is_operational !== undefined ? initialData.is_operational : true);
+    const [is_operational, setIsOperational] = useState(initialData.state !== undefined ? initialData.state : true);
     const [formError, setFormError] = useState('');
 
     const handleInternalFormSubmit = (event) => {
