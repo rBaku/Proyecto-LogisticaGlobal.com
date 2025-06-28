@@ -74,7 +74,9 @@ function TechnicianViewPage() {
   const fetchIncidentsFromAPI = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      const response = await fetch('http://localhost:3001/api/incidentes');
+      const response = await fetch('http://localhost:3001/api/incidentes', {
+        credentials: 'include'
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error al obtener los incidentes: ${response.statusText}`);
@@ -129,6 +131,7 @@ function TechnicianViewPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToUpdate),
+        credentials: 'include'
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
