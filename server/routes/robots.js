@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 
+
 // POST /api/robots - Crear un nuevo robot
 router.post('/', async (req, res, next) => {
   const { id, name, state } = req.body;
@@ -36,26 +37,50 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-// GET /api/robots - Obtener todos los robots
+// GET /api/robots - Obtener todos los robots con conteo de incidentes pendientes
 router.get('/', async (_req, res, next) => {
   try {
-    // Podrías añadir filtros como ?state=true
-    const result = await pool.query('SELECT id, name, state FROM Robots ORDER BY name;');
+    const query = `
+      SELECT 
+        r.id,
+        r.name,
+        r.state,
+        COUNT(i.*) FILTER (WHERE i.status NOT IN ('Resuelto', 'Firmado')) AS unresolved_incidents
+      FROM Robots r
+      LEFT JOIN Incidents i ON i.robot_id = r.id
+      GROUP BY r.id
+      ORDER BY r.name;
+    `;
+    const result = await pool.query(query);
     res.json(result.rows);
+    
   } catch (error) {
     console.error('Error en GET /api/robots:', error);
     next(error);
   }
 });
 
-// GET /api/robots/:id - Obtener un robot por ID
+// GET /api/robots/:id - Obtener un robot por ID con conteo de incidentes pendientes
 router.get('/:id', async (req, res, next) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT id, name, state FROM Robots WHERE id = $1', [id]);
+    const query = `
+      SELECT 
+        r.id,
+        r.name,
+        r.state,
+        COUNT(i.*) FILTER (WHERE i.status NOT IN ('Resuelto', 'Firmado')) AS unresolved_incidents
+      FROM Robots r
+      LEFT JOIN Incidents i ON i.robot_id = r.id
+      WHERE r.id = $1
+      GROUP BY r.id;
+    `;
+    const result = await pool.query(query, [id]);
+
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Robot no encontrado.' });
     }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error(`Error en GET /api/robots/${id}:`, error);

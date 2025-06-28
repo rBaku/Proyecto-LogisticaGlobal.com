@@ -177,6 +177,7 @@ function RobotStatusPage() {
                     <TableCell sx={{ fontWeight: 'bold' }}>ID Robot</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Estado Operativo</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Incidentes Pendientes</TableCell>
                     {userRole === 'admin' && (
                       <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
                     )}
@@ -196,6 +197,9 @@ function RobotStatusPage() {
                             <Typography variant="caption" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' }}}>
                                 {robot.state ? "Operativo" : "No Operativo"}
                             </Typography>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {robot.unresolved_incidents ?? 0}
                         </TableCell>
                         {userRole === 'admin' && (
                           <TableCell align="center">
