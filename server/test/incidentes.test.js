@@ -48,6 +48,11 @@ describe('API /api/incidentes (Integración)', () => {
       VALUES ('10002', 'tecnico_test2','test2@example.com','password','tecnico','Técnico de Prueba 2')
       ON CONFLICT (id) DO NOTHING;
     `);
+    await query(`
+      INSERT INTO users (id, username, email, password, role, full_name)
+      VALUES ('9992', 'Test_Admin', 'testadmin@example.com', 'password', 'admin', 'Administrador de Prueba')
+      ON CONFLICT (id) DO NOTHING;
+    `);
 
     // Insertar incidente de prueba
     await query(`
