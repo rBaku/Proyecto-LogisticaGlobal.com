@@ -26,7 +26,8 @@ describe('API /api/incidentes (Integración)', () => {
     app.use('/api/incidentes', incidentesRouter);
   });
 
-  beforeEach(async () => {
+  beforeEach(async function() {
+    this.timeout(10000);
     // Generar un token válido antes de cada test
     token = jwt.sign({ id: 9992, role: 'admin' }, process.env.JWT_SECRET);
 
@@ -96,28 +97,49 @@ describe('API /api/incidentes (Integración)', () => {
     console.error.restore(); // restaura comportamiento original
   });
 
-  it('GET / debería devolver una lista de incidentes', async () => {
-    const res = await request(app).get('/api/incidentes');
+  it('GET / debería devolver una lista de incidentes con técnicos asignados', async () => {
+    const res = await request(app)
+      .get('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`]);
 
     expect(res.status).to.equal(200);
     expect(res.body).to.be.an('array');
-    const ids = res.body.map(inc => inc.company_report_id);
-    expect(ids).to.include('INC-Test-001');
+
+    const incidente = res.body.find(inc => inc.company_report_id === 'INC-Test-001');
+    expect(incidente).to.exist;
+
+    expect(incidente.robot_id).to.equal('RBT-TestGet1');
+    expect(incidente.status).to.equal('Creado');
+    expect(incidente.location).to.equal('Zona A');
+
+    // Verifica que el campo de técnicos exista y contenga los IDs correctos
+    expect(incidente).to.have.property('assigned_technicians').that.is.an('array');
+    // Extrae los IDs de los técnicos como strings (si quieres comparar como string)
+    const tecnicoIds = incidente.assigned_technicians.map(t => String(t.id));
+    // Verifica que estén los técnicos esperados
+    expect(tecnicoIds).to.include.members(['10001', '10002']);
   });
   it('GET /:id debería devolver el incidente correspondiente por UUID', async () => {
-    // Obtener el ID insertado en beforeEach
     const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
     const incidenteId = rows[0].id;
 
-    const res = await request(app).get(`/api/incidentes/${incidenteId}`);
+    const res = await request(app)
+      .get(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${token}`]); // autenticación si tu ruta la requiere
 
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property('company_report_id', 'INC-Test-001');
     expect(res.body).to.have.property('id', incidenteId);
+    expect(res.body).to.have.property('assigned_technicians').that.is.an('array');
+
+    const tecnicoIds = res.body.assigned_technicians.map(t => t.id);
+    expect(tecnicoIds).to.include.members([10001, 10002]);
   });
 
   it('GET /:id debería devolver 404 si no existe el incidente', async () => {
-    const res = await request(app).get('/api/incidentes/00000000-0000-0000-0000-000000000000');
+    const res = await request(app)
+      .get('/api/incidentes/00000000-0000-0000-0000-000000000000')
+      .set('Cookie', [`access_token=${token}`])
     expect(res.status).to.equal(404);
     expect(res.body).to.have.property('message').that.includes('Incidente no encontrado');
   });

@@ -5,91 +5,122 @@ const authMiddleware = require('../middleware/auth');
 const authorizeRoles = require('../middleware/authorizeRoles');
 
 // POST /api/incidentes
-router.post('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
-  const {
-    company_report_id,
-    robot_id,
-    incident_timestamp,
-    location,
-    type,
-    cause,
-    assigned_technicians,
-    gravity,
-  } = req.body;
+router.post(
+  '/',
+  authMiddleware,
+  authorizeRoles('admin', 'supervisor', 'jefe_turno'),
+  async (req, res, next) => {
+    const {
+      company_report_id,
+      robot_id,
+      incident_timestamp,
+      location,
+      type,
+      cause,
+      assigned_technicians,
+      gravity,
+      technician_comment,
+      signed_by_user_id,
+      signed_at,
+      created_by,
+      updated_by,
+      fall_back_type,
+      finished_by,
+      finished_at
+    } = req.body;
 
-  // Validaciones
-  if (
-    !company_report_id ||
-    !robot_id ||
-    !incident_timestamp ||
-    !location ||
-    !type ||
-    !cause ||
-    !Array.isArray(assigned_technicians) ||
-    assigned_technicians.length === 0
-  ) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios para crear el incidente.' });
-  }
+    // Validaciones básicas
+    if (
+      !company_report_id ||
+      !robot_id ||
+      !incident_timestamp ||
+      !location ||
+      !type ||
+      !cause ||
+      !Array.isArray(assigned_technicians) ||
+      assigned_technicians.length === 0
+    ) {
+      return res.status(400).json({
+        error: 'Faltan campos obligatorios para crear el incidente.'
+      });
+    }
 
-  if (
-    gravity !== null &&
-    gravity !== undefined &&
-    (typeof gravity !== 'number' || gravity < 1 || gravity > 10)
-  ) {
-    return res.status(400).json({ error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10.' });
-  }
-
-  try {
-    const pool = await initializePool(); // <- usa initializePool correctamente
-    const client = await pool.connect();
+    if (
+      gravity !== null &&
+      gravity !== undefined &&
+      (typeof gravity !== 'number' || gravity < 1 || gravity > 10)
+    ) {
+      return res.status(400).json({
+        error: 'La gravedad, si se especifica, debe ser un número entre 1 y 10.'
+      });
+    }
 
     try {
-      await client.query('BEGIN');
+      const pool = await initializePool();
+      const client = await pool.connect();
 
-      const insertIncident = `
-        INSERT INTO Incidents (
-          company_report_id, robot_id, incident_timestamp, location,
-          type, cause, gravity, status
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'Creado')
-        RETURNING *;
-      `;
+      try {
+        await client.query('BEGIN');
 
-      const incidentValues = [
-        company_report_id,
-        robot_id,
-        incident_timestamp,
-        location,
-        type,
-        cause,
-        gravity,
-      ];
+        const insertIncident = `
+          INSERT INTO Incidents (
+            company_report_id, robot_id, incident_timestamp, location,
+            type, cause, gravity, status, technician_comment,
+            signed_by_user_id, signed_at, created_by, updated_by,
+            fall_back_type, finished_by, finished_at
+          ) VALUES (
+            $1, $2, $3, $4,
+            $5, $6, $7, 'Creado', $8,
+            $9, $10, $11, $12,
+            $13, $14, $15
+          ) RETURNING *;
+        `;
 
-      const result = await client.query(insertIncident, incidentValues);
-      const incident = result.rows[0];
+        const incidentValues = [
+          company_report_id,
+          robot_id,
+          incident_timestamp,
+          location,
+          type,
+          cause,
+          gravity ?? null,
+          technician_comment ?? null,
+          signed_by_user_id ?? null,
+          signed_at ?? null,
+          created_by ?? null,
+          updated_by ?? null,
+          fall_back_type ?? null,
+          finished_by ?? null,
+          finished_at ?? null
+        ];
 
-      const insertTech = `
-        INSERT INTO Incident_Technicians (incident_id, technician_user_id)
-        VALUES ($1, $2);
-      `;
+        const result = await client.query(insertIncident, incidentValues);
+        const incident = result.rows[0];
 
-      for (const technicianId of assigned_technicians) {
-        await client.query(insertTech, [incident.id, technicianId]);
+        const insertTech = `
+          INSERT INTO Incident_Technicians (incident_id, technician_user_id)
+          VALUES ($1, $2);
+        `;
+
+        for (const technicianId of assigned_technicians) {
+          await client.query(insertTech, [incident.id, technicianId]);
+        }
+
+        await client.query('COMMIT');
+        res.status(201).json(incident);
+      } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error en POST /api/incidentes:', error);
+        next(error);
+      } finally {
+        client.release();
       }
-
-      await client.query('COMMIT');
-      res.status(201).json(incident);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      console.error('Error en POST /api/incidentes:', error);
-      next(error);
-    } finally {
-      client.release();
+    } catch (err) {
+      console.error('Error al inicializar pool:', err);
+      next(err);
     }
-  } catch (err) {
-    console.error('Error al inicializar pool:', err);
-    next(err);
   }
-});
+);
 
 // GET /api/incidentes - Obtener todos los incidentes con técnicos asignados
 router.get('/', authMiddleware, async (_req, res, next) => {
