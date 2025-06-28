@@ -34,7 +34,8 @@ describe('API /api/incidentes (Integración)', () => {
     // Insertar robot necesario para cumplir la clave foránea
     await query(`
       INSERT INTO Robots (id, name, state)
-      VALUES ('RBT-TestGet1', 'Robot Prueba', 'operativo');
+      VALUES ('RBT-TestGet1', 'Robot Prueba', 'operativo')
+      ON CONFLICT (id) DO NOTHING;
     `);
     // Insertar técnicos necesario
     await query(`
@@ -87,9 +88,22 @@ describe('API /api/incidentes (Integración)', () => {
 });
 
   afterEach(async () => {
-    // Borrar lo ingresa en BeforeEach
+    // Eliminar técnicos asociados primero
+    await query(`
+      DELETE FROM incident_technicians
+      WHERE incident_id IN (
+        SELECT id FROM incidents WHERE company_report_id LIKE 'INC-Test-%'
+      );
+    `);
+
+    // Eliminar todos los incidentes de prueba
+    await query(`DELETE FROM incidents WHERE company_report_id LIKE 'INC-Test-%';`);
+
+    // Eliminar incidente de beforeEach si tiene otro company_report_id
     await query(`DELETE FROM incident_technicians WHERE incident_id = $1`, [uuid]);
     await query(`DELETE FROM incidents WHERE id = $1`, [uuid]);
+
+    // Finalmente eliminar robot y técnicos
     await query(`DELETE FROM robots WHERE id = 'RBT-TestGet1'`);
     await query(`DELETE FROM users WHERE id IN (10001, 10002)`);
   });
@@ -152,73 +166,86 @@ describe('API /api/incidentes (Integración)', () => {
       location: 'Zona B',
       type: 'Fallo eléctrico',
       cause: 'Cortocircuito',
-      assigned_technician_id: 'TECH-002',
+      assigned_technicians: [10001],
       gravity: 7
     };
 
-    const res = await request(app).post('/api/incidentes').send(body);
+    const res = await request(app)
+      .post('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`])
+      .send(body);
 
     expect(res.status).to.equal(201);
     expect(res.body).to.have.property('company_report_id', 'INC-Test-POST');
   });
-
   it('POST / debería rechazar si faltan campos obligatorios', async () => {
-    const res = await request(app).post('/api/incidentes').send({
-      robot_id: 'RBT-TestGet1',
-      incident_timestamp: '2024-05-01T12:00:00Z',
-      location: 'Zona C',
-      type: 'Fallo',
-      cause: 'Desconocido',
-      assigned_technician_id: 'TECH-003'
-      // Falta company_report_id
-    });
+    const res = await request(app)
+      .post('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        robot_id: 'RBT-TestGet1',
+        incident_timestamp: '2024-05-01T12:00:00Z',
+        location: 'Zona C',
+        type: 'Fallo',
+        cause: 'Desconocido',
+        assigned_technicians: [10002] // válido, pero falta report_id
+      });
 
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property('error').that.includes('Faltan campos obligatorios');
   });
 
   it('POST / debería rechazar gravedad inválida (< 1)', async () => {
-    const res = await request(app).post('/api/incidentes').send({
-      company_report_id: 'INC-Test-BadGravity',
-      robot_id: 'RBT-TestGet1',
-      incident_timestamp: '2024-05-01T12:00:00Z',
-      location: 'Zona D',
-      type: 'Choque',
-      cause: 'Mal cálculo',
-      assigned_technician_id: 'TECH-004',
-      gravity: 0 // Inválida
-    });
+    const res = await request(app)
+      .post('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        company_report_id: 'INC-Test-BadGravity',
+        robot_id: 'RBT-TestGet1',
+        incident_timestamp: '2024-05-01T12:00:00Z',
+        location: 'Zona D',
+        type: 'Choque',
+        cause: 'Mal cálculo',
+        assigned_technicians: [10001],
+        gravity: 0
+      });
 
     expect(res.status).to.equal(400);
     expect(res.body).to.have.property('error').that.includes('gravedad');
   });
 
   it('POST / debería rechazar gravedad inválida (> 10)', async () => {
-    const res = await request(app).post('/api/incidentes').send({
-      company_report_id: 'INC-Test-BadGravity2',
-      robot_id: 'RBT-TestGet1',
-      incident_timestamp: '2024-05-01T12:00:00Z',
-      location: 'Zona E',
-      type: 'Sobrecalentamiento',
-      cause: 'Falla en sensor',
-      assigned_technician_id: 'TECH-005',
-      gravity: 11
-    });
+    const res = await request(app)
+      .post('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        company_report_id: 'INC-Test-BadGravity2',
+        robot_id: 'RBT-TestGet1',
+        incident_timestamp: '2024-05-01T12:00:00Z',
+        location: 'Zona E',
+        type: 'Sobrecalentamiento',
+        cause: 'Falla en sensor',
+        assigned_technicians: [10001],
+        gravity: 11
+      });
 
     expect(res.status).to.equal(400);
   });
 
   it('POST / debería rechazar gravedad inválida (texto)', async () => {
-    const res = await request(app).post('/api/incidentes').send({
-      company_report_id: 'INC-Test-BadGravity3',
-      robot_id: 'RBT-TestGet1',
-      incident_timestamp: '2024-05-01T12:00:00Z',
-      location: 'Zona F',
-      type: 'Error de sistema',
-      cause: 'Valor nulo inesperado',
-      assigned_technician_id: 'TECH-006',
-      gravity: 'grave'
-    });
+    const res = await request(app)
+      .post('/api/incidentes')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        company_report_id: 'INC-Test-BadGravity3',
+        robot_id: 'RBT-TestGet1',
+        incident_timestamp: '2024-05-01T12:00:00Z',
+        location: 'Zona F',
+        type: 'Error de sistema',
+        cause: 'Valor nulo inesperado',
+        assigned_technicians: [10001],
+        gravity: 'grave'
+      });
 
     expect(res.status).to.equal(400);
   });
@@ -226,15 +253,18 @@ describe('API /api/incidentes (Integración)', () => {
     const { rows } = await query(`SELECT id FROM Incidents WHERE company_report_id = 'INC-Test-001'`);
     const incidenteId = rows[0].id;
 
-    const res = await request(app).put(`/api/incidentes/${incidenteId}`).send({
-      location: 'Zona Actualizada',
-      type: 'Error lógico',
-      cause: 'Fallo en programación',
-      assigned_technician_id: 'TECH-Test',
-      gravity: 6,
-      status: 'En revisión',
-      technician_comment: 'En análisis'
-    });
+    const res = await request(app)
+      .put(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        location: 'Zona Actualizada',
+        type: 'Error lógico',
+        cause: 'Fallo en programación',
+        assigned_technicians: [10002],
+        gravity: 6,
+        status: 'En revisión',
+        technician_comment: 'En análisis'
+      });
 
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property('location', 'Zona Actualizada');
@@ -243,41 +273,55 @@ describe('API /api/incidentes (Integración)', () => {
   });
 
   it('PUT /:id debería devolver 404 si el incidente no existe', async () => {
-    const res = await request(app).put('/api/incidentes/00000000-0000-0000-0000-000000000000').send({
-      location: 'Zona Fantasma',
-      type: 'Falla desconocida',
-      cause: 'N/A',
-      assigned_technician_id: 'TECH-000',
-      gravity: 3,
-      status: 'Creado',
-      technician_comment: null
-    });
+    const res = await request(app)
+      .put('/api/incidentes/00000000-0000-0000-0000-000000000000')
+      .set('Cookie', [`access_token=${token}`])
+      .send({
+        location: 'Zona Fantasma',
+        type: 'Falla desconocida',
+        cause: 'N/A',
+        assigned_technicians: [10001],
+        gravity: 3,
+        status: 'Creado',
+        technician_comment: null
+      });
 
     expect(res.status).to.equal(404);
   });
 
   it('DELETE /:id debería eliminar el incidente si existe', async () => {
-    // Insertar uno específicamente para borrar
     const insert = await query(`
       INSERT INTO Incidents (
         id, company_report_id, robot_id, incident_timestamp, location,
-        type, cause, assigned_technician_id, gravity, status
+        type, cause, gravity, status
       )
       VALUES (
         gen_random_uuid(), 'INC-Test-Delete', 'RBT-TestGet1', NOW(), 'Zona Borrar',
-        'Error crítico', 'Sobrecarga', 'TECH-Test', 9, 'Creado'
+        'Error crítico', 'Sobrecarga', 9, 'Creado'
       ) RETURNING id;
     `);
+
     const incidenteId = insert.rows[0].id;
 
-    const res = await request(app).delete(`/api/incidentes/${incidenteId}`);
+    // Insertar técnico asociado
+    await query(`
+      INSERT INTO Incident_Technicians (incident_id, technician_user_id)
+      VALUES ($1, $2);
+    `, [incidenteId, 10001]);
+
+    const res = await request(app)
+      .delete(`/api/incidentes/${incidenteId}`)
+      .set('Cookie', [`access_token=${token}`]);
 
     expect(res.status).to.equal(200);
     expect(res.body).to.have.property('message').that.includes('eliminado');
   });
 
   it('DELETE /:id debería devolver 404 si el incidente no existe', async () => {
-    const res = await request(app).delete('/api/incidentes/00000000-0000-0000-0000-000000000000');
+    const res = await request(app)
+      .delete('/api/incidentes/00000000-0000-0000-0000-000000000000')
+      .set('Cookie', [`access_token=${token}`]);
+
     expect(res.status).to.equal(404);
   });
 });

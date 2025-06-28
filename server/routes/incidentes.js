@@ -208,7 +208,7 @@ router.put('/:id', authMiddleware, authorizeRoles('admin', 'supervisor'), async 
     gravity,
     technician_comment,
   } = req.body;
-  console.log('BODY:', req.body);
+  // console.log('BODY:', req.body);
 
   if (!status) {
     return res.status(400).json({ error: 'El campo status es obligatorio para actualizar.' });
