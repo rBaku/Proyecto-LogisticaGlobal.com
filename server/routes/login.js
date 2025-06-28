@@ -86,11 +86,11 @@ router.get('/protected', (req, res)=>{
         res.status(401).send('Acceso no autorizado')
     }
 })
-router.get('/protected2', (req, res)=>{
-    const { user } = req.session
-    if(!user) {
-      return res.statu(403).send("Acceso no autorizado")}
-})
+// router.get('/protected2', (req, res)=>{
+//     const { user } = req.session
+//     if(!user) {
+//       return res.statu(403).send("Acceso no autorizado")}
+// })
 
 
 module.exports = router;
