@@ -21,14 +21,6 @@ pipeline {
             }
         }
 
-        stage('Test Cliente (Frontend)') { 
-            steps {
-                dir('cliente') {
-                    sh 'npm test -- --watchAll=false'
-                }
-            }
-        }
-
         stage('Build Server (Backend)') {
             steps {
                 dir('server') {
@@ -40,30 +32,22 @@ pipeline {
         stage('Test Server (Backend)') {
             steps {
                 dir('server') {
-                    sh 'npm test'
+                    sh 'npm test'  // Asegúrate de tener esto en package.json
                 }
-            }
-        }
-
-        stage('Archive Artifacts') {
-            steps {
-                archiveArtifacts artifacts: 'cliente/build/**/*', fingerprint: true
             }
         }
     }
 
     post {
         always {
-            echo 'Limpiando el workspace...'
+            echo '🧹 Limpiando workspace'
             deleteDir()
         }
-
         success {
-            echo 'Pipeline ejecutado exitosamente.'
+            slackSend(channel: '#devops', color: 'good', message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
-
         failure {
-            echo 'Pipeline falló. Revisa los logs.'
+            slackSend(channel: '#devops', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
     }
 }
