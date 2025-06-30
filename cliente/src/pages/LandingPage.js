@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, Navigate } from 'react-router-dom';
 import Container from '@mui/material/Container';
 import Typography from '@mui/material/Typography';
 import Grid from '@mui/material/Grid';
@@ -8,8 +8,18 @@ import CardContent from '@mui/material/CardContent';
 import CardActions from '@mui/material/CardActions';
 import Button from '@mui/material/Button';
 
+
 function LandingPage() {
+  /*const token = localStorage.getItem('token');
+
+  // 3. Si no hay token, redirige a la página de login
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }*/
   const role = localStorage.getItem('role'); // <- Obtener el rol
+  if (!role) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>

@@ -93,14 +93,40 @@ router.post(
         for (const technicianId of assigned_technicians) {
           await client.query(insertTech, [incident.id, technicianId]);
         }
-
-        // ✅ Insertar entrada en incident_history
+        /* BORRAR COMENTARIO DESPUES!!!!!!!!!
         const insertHistory = `
           INSERT INTO incident_history (
-            incident_id, change_type, changes, changed_by
-          ) VALUES ($1, 'Creation', '', $2);
+            incident_id, status, changes, changed_by
+          ) VALUES ($1, $2, $3, $4);
         `;
-        await client.query(insertHistory, [incident.id, createdBy]);
+        await client.query(insertHistory, [
+          incident.id,          // $1: ID del incidente recién creado
+          incident.status,      // $2: El estado inicial (ej: 'Creado')
+          'Incidente creado.',  // $3: Una descripción del evento
+          createdBy             // $4: ID del usuario que lo creó
+        ]);
+        */
+
+        // Solución Temporal con ID Manual:***********************************
+
+        // Insertar entrada en el historial de incidentes
+        const insertHistory = `
+          INSERT INTO incident_history (
+            id, incident_id, status, changes, changed_by
+          ) VALUES ($1, $2, $3, $4, $5);
+        `;
+
+        // Generamos un ID aleatorio y grande para evitar colisiones durante las pruebas
+        const manualHistoryId = Math.floor(Math.random() * 1000000); 
+
+        await client.query(insertHistory, [
+          manualHistoryId,        // $1: El ID manual para la tabla de historial
+          incident.id,            // $2: ID del incidente recién creado
+          incident.status,        // $3: El estado inicial (ej: 'Creado')
+          'Incidente creado.',    // $4: Una descripción del evento
+          createdBy               // $5: ID del usuario que lo creó
+        ]);
+        //******************************************************************** */
 
         await client.query('COMMIT');
         res.status(201).json(incident);
