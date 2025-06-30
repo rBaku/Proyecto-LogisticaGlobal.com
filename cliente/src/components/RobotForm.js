@@ -5,7 +5,6 @@ import {
   Button,
   Stack,
   Typography,
-  CircularProgress,
   FormControl,
   InputLabel,
   Select,
