@@ -6,10 +6,48 @@ pipeline {
     }
 
     stages {
-        stage('Sanity Check') {
+        stage('Checkout') {
             steps {
-                echo '✅ Pipeline cargado correctamente'
+                checkout scm
             }
+        }
+
+        stage('Build Cliente (Frontend)') {
+            steps {
+                dir('cliente') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Build Server (Backend)') {
+            steps {
+                dir('server') {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Test Server (Backend)') {
+            steps {
+                dir('server') {
+                    sh 'npm test'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo '🧹 Limpiando workspace'
+            deleteDir()
+        }
+        success {
+            slackSend(channel: '#devops', color: 'good', message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+        }
+        failure {
+            slackSend(channel: '#devops', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
     }
 }
