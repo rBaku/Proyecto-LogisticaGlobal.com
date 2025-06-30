@@ -7,8 +7,7 @@ Proyecto de Asignatura Pruebas de Software (IN-331), Universidad Técnica Federi
 - [Cristóbal Pérez](https://github.com/cristobalP02)
 
 ### Link al video: https://youtu.be/0UcnRony0kU
-### Link al video 2: https://youtu.be/rRbDh6sfk3s
-##IMPORTANTE DISCLAIMER VIDEO 2: https://imgur.com/a/sLb4A5q
+### Link al video 2: https://www.youtube.com/watch?v=qXa1yXSrKuY
 
 ## Objetivos, Alcances y Propósito
 Se crea un sistema de registro de incidencias relacionadas a los accidentes de robots que ocurren en una fábrica, creado para mejorar la eficiencia, simplificar y optimizar el proceso que actualmente utiliza la empresa **[LogísticaGlobal.com](https://github.com/Pruebas-de-Software/HandsOnProject/blob/main/semestres/2025-1/logisticaglobal.md)**. Dicho proceso es manual, se realiza en varias etapas por distintos empleados y resulta engorroso, dificultando la operatividad de los almacenes, especialmente para los supervisores de operaciones.
