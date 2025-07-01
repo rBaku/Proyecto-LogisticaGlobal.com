@@ -14,10 +14,10 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
+// import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import Button from '@mui/material/Button';
+// import Button from '@mui/material/Button';
 import Fade from '@mui/material/Fade';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -152,18 +152,18 @@ function TechnicianViewPage() {
     }
   };
 
-  const handleTriggerEditFormSubmit = () => {
-    if (editFormRef.current) {
-      const formElement = editFormRef.current.querySelector('form') || editFormRef.current;
-      if (formElement?.requestSubmit) {
-        formElement.requestSubmit();
-      } else if (formElement?.submit) {
-        formElement.submit();
-      } else {
-        editFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      }
-    }
-  };
+  // const handleTriggerEditFormSubmit = () => {
+  //   if (editFormRef.current) {
+  //     const formElement = editFormRef.current.querySelector('form') || editFormRef.current;
+  //     if (formElement?.requestSubmit) {
+  //       formElement.requestSubmit();
+  //     } else if (formElement?.submit) {
+  //       formElement.submit();
+  //     } else {
+  //       editFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  //     }
+  //   }
+  // };
 
   const displayGravity = (gravityValue) => gravityValue == null ? 'Sin asignar' : gravityValue;
 
