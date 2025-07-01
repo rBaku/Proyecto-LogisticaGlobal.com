@@ -63,18 +63,6 @@ function RobotStatusPage() {
     setRobotToEdit(null);
   };
 
-  const handleTriggerEditFormSubmit = () => {
-    if (editFormRef.current) {
-      const formElement = editFormRef.current.querySelector('form') || editFormRef.current;
-      if (formElement?.requestSubmit) {
-        formElement.requestSubmit();
-      } else if (formElement?.submit) {
-        formElement.submit();
-      } else {
-        editFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      }
-    }
-  };
 
   const handleUpdateRobot = async (formData) => {
     setIsSubmitting(true);
