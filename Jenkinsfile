@@ -6,6 +6,8 @@ pipeline {
     }
 
     environment {
+        PGUSER = 'andres.saldiass@usm.cl'
+        PGPASSWORD = credentials('id_credencial')
         PGHOST = 'logisticabasedatos.postgres.database.azure.com'
         PGPORT = '5432'
         PGDATABASE = 'postgres'
