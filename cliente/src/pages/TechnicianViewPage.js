@@ -85,6 +85,7 @@ function TechnicianViewPage() {
         throw new Error(errorData.message || `Error al obtener los incidentes: ${response.statusText}`);
       }
       const data = await response.json();
+      
       // Filtrar por técnico asignado
       const filtered = data.filter((incident) => {
         const techs = incident.assigned_technicians;
@@ -268,13 +269,14 @@ function TechnicianViewPage() {
                 initialData={selectedIncident}
                 onSubmit={handleSaveChanges}
                 isLoading={isSaving}
+                onClose={handleCloseEditModal}
               />
             </Box>
           ) : (
             <CircularProgress sx={{ display: 'block', margin: 'auto' }} />
           )}
         </DialogContent>
-        <DialogActions>
+        {/* <DialogActions>
           <Button onClick={handleCloseEditModal} disabled={isSaving}>Cancelar</Button>
           <Button
             onClick={handleTriggerEditFormSubmit}
@@ -284,7 +286,7 @@ function TechnicianViewPage() {
           >
             {isSaving ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
-        </DialogActions>
+        </DialogActions> */}
       </Dialog>
 
       {/* Snackbar para notificaciones */}
