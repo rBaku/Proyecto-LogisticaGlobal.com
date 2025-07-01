@@ -11,6 +11,8 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.5.3",
@@ -21,7 +23,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test:ui": "jest --testTimeout=30000 test-ui/"
   },
   "eslintConfig": {
     "extends": [
@@ -40,5 +43,11 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "chromedriver": "^138.0.0",
+    "geckodriver": "^5.0.0",
+    "jest": "^27.5.1",
+    "selenium-webdriver": "^4.34.0"
   }
 }

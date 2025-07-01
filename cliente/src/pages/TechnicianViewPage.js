@@ -49,24 +49,14 @@ function TechnicianViewPage() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const editFormRef = useRef();
-  const [techniciansMap, setTechniciansMap] = useState({});
   const [currentTechnicianId, setCurrentTechnicianId] = useState(null);
 
-  const user = JSON.parse(localStorage.getItem('user')); // ⚠️ Asegúrate de guardar el user en login
   useEffect(() => {//obtener id
-    console.log("1")
+    const user = JSON.parse(localStorage.getItem('user'));
     const fetchTechnicianId = async () => {
       try {
-        const username = localStorage.getItem('username');
-        if (!username) return;
-
-        const res = await fetch(`http://localhost:3001/api/users/username/${username}`);
-        if (!res.ok) throw new Error('No se pudo obtener el técnico');
-        const userData = await res.json();
-        console.log("SJDHSJHDJSHDSJHD")
-        console.log(userData.id)
-
-        setCurrentTechnicianId(userData.id);
+        if (!user) return;
+        setCurrentTechnicianId(user.id);
       } catch (error) {
         console.error('Error obteniendo el ID del técnico:', error);
       }
@@ -82,16 +72,17 @@ function TechnicianViewPage() {
   }, []);
 
   const fetchIncidentsFromAPI = useCallback(async () => {
-    console.log("✅ Llamando a fetchIncidentsFromAPI con id:", currentTechnicianId);
     setIsLoadingData(true);
     try {
-      const response = await fetch('http://localhost:3001/api/incidentes');
+      const response = await fetch('http://localhost:3001/api/incidentes', {
+        credentials: 'include'
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error al obtener los incidentes: ${response.statusText}`);
       }
       const data = await response.json();
-      // ✅ Filtrar por técnico asignado
+      // Filtrar por técnico asignado
       const filtered = data.filter((incident) => {
         const techs = incident.assigned_technicians;
         if (Array.isArray(techs)) {
@@ -110,27 +101,8 @@ function TechnicianViewPage() {
     }
   }, [showSnackbar, currentTechnicianId]);
   
-  useEffect(() => {
-    console.log("2")
-    const fetchTechnicians = async () => {
-      try {
-        const response = await fetch('http://localhost:3001/api/tecnicos');
-        if (!response.ok) throw new Error('No se pudieron cargar los técnicos');
-        const data = await response.json();
-        const map = data.reduce((acc, tech) => {
-          acc[tech.id] = tech.full_name;
-          return acc;
-        }, {});
-        setTechniciansMap(map);
-      } catch (error) {
-        console.error("Error cargando técnicos:", error);
-      }
-    };
-    fetchTechnicians();
-  }, []);
 
   useEffect(() => {
-    console.log("3")
     if (currentTechnicianId !== null) {
       fetchIncidentsFromAPI();
     }
@@ -159,6 +131,7 @@ function TechnicianViewPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(dataToUpdate),
+        credentials: 'include'
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -188,7 +161,6 @@ function TechnicianViewPage() {
     }
   };
 
-  const getTechnicianName = (techId) => techniciansMap[techId] || techId || 'N/A';
   const displayGravity = (gravityValue) => gravityValue == null ? 'Sin asignar' : gravityValue;
 
   return (

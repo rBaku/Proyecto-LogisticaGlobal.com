@@ -51,7 +51,7 @@ const filterableColumns = [
 ];
 
 const formatDateTime = (dateTimeString) => {
-  if (!dateTimeString) return 'N/A';
+  if (!dateTimeString) return ''; //"N/A"
   try {
     const date = new Date(dateTimeString);
     if (isNaN(date.getTime())) return 'Fecha inválida';
@@ -80,7 +80,13 @@ function IncidentListPage() {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const editFormRef = useRef();
-  const [techniciansMap, setTechniciansMap] = useState({});
+
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [incidentHistory, setIncidentHistory] = useState([]);
+
+  const userRole = localStorage.getItem('role');
+  
+  const canEditOrDelete = userRole === 'admin' || userRole === 'supervisor';
 
   const showSnackbar = useCallback((message, severity = 'success') => {
     setSnackbarMessage(message);
@@ -109,31 +115,25 @@ function IncidentListPage() {
       setIsLoadingData(false);
     }
   }, [showSnackbar]);
-
-  useEffect(() => {
-    const fetchTechnicians = async () => {
-        try {
-            const response = await fetch('http://localhost:3001/api/tecnicos', {
+  const handleViewHistory = async (incidentId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/api/incidentes/${incidentId}/history`, {
         credentials: 'include'
-      }); // <-- URL actualizada
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'No se pudieron cargar los técnicos');
-            }
-            const data = await response.json();
-            const map = data.reduce((acc, tech) => {
-                acc[tech.id] = tech.full_name; // API devuelve full_name
-                return acc;
-            }, {});
-            setTechniciansMap(map);
-        } catch (error) {
-            console.error("Error cargando técnicos:", error);
-            showSnackbar(`Error al cargar técnicos: ${error.message}`, 'error');
-        }
-    };
-    fetchTechnicians();
-  }, [showSnackbar]); // showSnackbar como dependencia si se usa dentro
+      });
+      if (!response.ok) throw new Error('Error al obtener el historial');
+      const data = await response.json();
+      setIncidentHistory(data);
+      setHistoryModalOpen(true);
+    } catch (error) {
+      console.error('Error al cargar historial:', error);
+      showSnackbar('No se pudo cargar el historial del incidente.', 'error');
+    }
+  };
 
+  const handleCloseHistoryModal = () => {
+    setHistoryModalOpen(false);
+    setIncidentHistory([]);
+  };
 
   useEffect(() => {
     fetchIncidentsFromAPI();
@@ -268,9 +268,9 @@ function IncidentListPage() {
     }
   };
 
-  const getTechnicianName = (techId) => techniciansMap[techId] || techId || 'N/A';
   const displayGravity = (gravityValue) => gravityValue === null || gravityValue === undefined ? 'Sin asignar' : gravityValue;
 
+  console.log("selectedIncident:", selectedIncident);
 
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
@@ -322,13 +322,22 @@ function IncidentListPage() {
                         <TableCell>
                           {(incident.assigned_technicians || [])
                             .map(tech => tech.full_name)
-                            .join(', ') || 'N/A'}
+                            .join(', ') || ''}{/* N/A*/}
                         </TableCell>
                         <TableCell><Tooltip title={incident.id}><Typography variant="caption" noWrap>{incident.id.substring(0,8)}...</Typography></Tooltip></TableCell>
                         <TableCell align="center">
                             <Tooltip title="Ver Detalles"><IconButton size="small" onClick={() => handleViewDetails(incident.id)}><VisibilityIcon fontSize="inherit" /></IconButton></Tooltip>
-                            <Tooltip title="Editar"><IconButton size="small" onClick={() => handleEdit(incident.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
-                            <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+                            {canEditOrDelete && (
+                              <>
+                                <Tooltip title="Editar"><IconButton size="small" onClick={() => handleEdit(incident.id)}><EditIcon fontSize="inherit" /></IconButton></Tooltip>
+                                <Tooltip title="Eliminar"><IconButton size="small" color="error" onClick={() => handleDelete(incident.id)}><DeleteIcon fontSize="inherit" /></IconButton></Tooltip>
+                              </>
+                            )}
+                            <Tooltip title="Ver Historial">
+                              <IconButton size="small" onClick={() => handleViewHistory(incident.id)}>
+                                🕘
+                              </IconButton>
+                            </Tooltip>
                         </TableCell>
                     </TableRow>
                     ))
@@ -358,11 +367,19 @@ function IncidentListPage() {
                       <Typography>
                         {(selectedIncident.assigned_technicians || [])
                           .map(tech => tech.full_name)
-                          .join(', ') || 'N/A'}
+                          .join(', ') || ''}{/* N/A */}
                       </Typography>
                     </Grid>
-                    <Grid item xs={12}><Typography variant="subtitle2">Causa Inicial:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || 'N/A'}</Typography></Grid>
-                    <Grid item xs={12}><Typography variant="subtitle2">Comentario del Técnico:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.technician_comment || 'N/A'}</Typography></Grid>
+                    <Grid item xs={12}><Typography variant="subtitle2">Causa Inicial:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.cause || ''}</Typography></Grid>{ /* N/A */}
+                    <Grid item xs={12}><Typography variant="subtitle2">Comentario del Técnico:</Typography><Typography sx={{ whiteSpace: 'pre-wrap' }}>{selectedIncident.technician_comment || ''}</Typography></Grid>{ /* N/A */}
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Creado por:</Typography><Typography>{selectedIncident.created_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Actualizado por:</Typography><Typography>{selectedIncident.updated_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Firmado por:</Typography><Typography>{selectedIncident.signed_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Firma:</Typography><Typography>{formatDateTime(selectedIncident.signed_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Finalizado por:</Typography><Typography>{selectedIncident.finished_by_name}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Finalización:</Typography><Typography>{formatDateTime(selectedIncident.finished_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Fecha de Creación:</Typography><Typography>{formatDateTime(selectedIncident.created_at)}</Typography></Grid>
+                    <Grid item xs={12} sm={6}><Typography variant="subtitle2">Última Actualización:</Typography><Typography>{formatDateTime(selectedIncident.updated_at)}</Typography></Grid>
                 </Grid>
             ) : ( <DialogContentText>Cargando detalles...</DialogContentText> )}
         </DialogContent>
@@ -384,6 +401,25 @@ function IncidentListPage() {
                   {isSaving ? 'Guardando...' : 'Guardar Cambios'}
               </Button>
           </DialogActions>
+      </Dialog>
+      <Dialog open={historyModalOpen} onClose={handleCloseHistoryModal} TransitionComponent={Transition} fullWidth maxWidth="md">
+        <DialogTitle>Historial del Incidente</DialogTitle>
+        <DialogContent dividers>
+          {incidentHistory.length > 0 ? (
+            incidentHistory.map((entry) => (
+              <Box key={entry.id} sx={{ mb: 2 }}>
+                <Typography variant="subtitle2">{entry.change_type} — {new Date(entry.change_date).toLocaleString('es-CL')}</Typography>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{entry.changes || '—'}</Typography>
+                <Typography variant="caption" color="text.secondary">Hecho por: {entry.changed_by_name || 'Desconocido'}</Typography>
+              </Box>
+            ))
+          ) : (
+            <Typography variant="body2">No hay historial para este incidente.</Typography>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseHistoryModal}>Cerrar</Button>
+        </DialogActions>
       </Dialog>
 
       <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={handleCloseSnackbar} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>

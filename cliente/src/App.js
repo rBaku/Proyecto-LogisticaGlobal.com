@@ -7,6 +7,7 @@ import IncidentListPage from './pages/IncidentListPage';
 import RobotStatusPage from './pages/RobotStatusPage';
 import TechnicianViewPage from './pages/TechnicianViewPage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import ReportPage from './pages/ReportPage';
 import Navbar from './components/Navbar';
 import Box from '@mui/material/Box';
 import LoginPage from './pages/LoginPage';
@@ -24,6 +25,7 @@ function App() {
           <Route path="/incidentes" element={<IncidentListPage />} />
           <Route path="/robots-estado" element={<RobotStatusPage />} />
           <Route path="/tecnico/incidentes" element={<TechnicianViewPage />} />
+          <Route path="/report" element={<ReportPage />} />
         </Routes>
       </Box>
        {/* Footer Opcional */}

@@ -8,9 +8,9 @@ const app = express();
 const cors = require('cors');
 const incidentesRoutes = require('./routes/incidentes');
 const robotsRoutes = require('./routes/robots');
-const tecnicosRoutes = require('./routes/tecnicos');
 const loginRoutes = require('./routes/login');
 const usersRoutes = require('./routes/users');
+const reportRoutes = require('./routes/report');
 
 const corsOptions = {
   origin: 'http://localhost:3000', // URL de tu frontend React
@@ -21,14 +21,11 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookiePaser());
 
-
-
-
 app.use('/api/incidentes', incidentesRoutes);
 app.use('/api/robots', robotsRoutes);
-app.use('/api/tecnicos', tecnicosRoutes);
 app.use('/api/login', loginRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/report', reportRoutes);
 
 app.listen(3001, () => {
   console.log('Servidor corriendo en el puerto 3001');

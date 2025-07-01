@@ -38,6 +38,13 @@ function Navbar() {
       credentials: 'include', // Necesario para enviar la cookie
     });
 
+    // Elimina el token del almacenamiento local
+    localStorage.removeItem('token');
+    // ¡AQUÍ ESTÁ LA CORRECCIÓN! Elimina también el rol.
+    localStorage.removeItem('role'); 
+    // Actualiza el estado del usuario en la aplicación a null
+    
+
     navigate('/login');
   } catch (error) {
     console.error('Error al cerrar sesión:', error);

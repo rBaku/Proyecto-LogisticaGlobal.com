@@ -25,6 +25,7 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+import EditIcon from '@mui/icons-material/Edit';
 
 import RobotForm from '../components/RobotForm'; // Importar el nuevo formulario
 
@@ -46,6 +47,59 @@ function RobotStatusPage() {
 
   const createFormRef = useRef();
 
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [robotToEdit, setRobotToEdit] = useState(null);
+  const editFormRef = useRef();
+
+
+  const handleOpenEditModal = (robot) => {
+    setRobotToEdit(robot);
+    setEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    if (isSubmitting) return;
+    setEditModalOpen(false);
+    setRobotToEdit(null);
+  };
+
+  const handleTriggerEditFormSubmit = () => {
+    if (editFormRef.current) {
+      const formElement = editFormRef.current.querySelector('form') || editFormRef.current;
+      if (formElement?.requestSubmit) {
+        formElement.requestSubmit();
+      } else if (formElement?.submit) {
+        formElement.submit();
+      } else {
+        editFormRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      }
+    }
+  };
+
+  const handleUpdateRobot = async (formData) => {
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`http://localhost:3001/api/robots/${robotToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Error al actualizar el robot: ${response.statusText}`);
+      }
+      showSnackbar(`Robot "${formData.name}" actualizado correctamente.`, 'success');
+      handleCloseEditModal();
+      fetchRobotsFromAPI(); // Recargar robots
+    } catch (error) {
+      console.error("Error al actualizar robot:", error);
+      showSnackbar(error.message || 'No se pudo actualizar el robot.', 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const showSnackbar = useCallback((message, severity = 'success') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
@@ -55,7 +109,9 @@ function RobotStatusPage() {
   const fetchRobotsFromAPI = useCallback(async () => {
     setIsLoadingData(true);
     try {
-      const response = await fetch('http://localhost:3001/api/robots');
+      const response = await fetch('http://localhost:3001/api/robots', {
+        credentials: 'include',
+      });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error al obtener los robots: ${response.statusText}`);
@@ -97,6 +153,7 @@ function RobotStatusPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
+        credentials: 'include',
       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -134,7 +191,10 @@ function RobotStatusPage() {
   const handleDeleteRobot = async (robotId, robotName) => {
     if (!window.confirm(`¿Está seguro de que desea eliminar el robot "${robotName}" (ID: ${robotId})? Esta acción no se puede deshacer.`)) return;
     try {
-      const response = await fetch(`http://localhost:3001/api/robots/${robotId}`, { method: 'DELETE' });
+      const response = await fetch(`http://localhost:3001/api/robots/${robotId}`, { 
+        method: 'DELETE',
+        credentials: 'include'
+       });
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Error al eliminar el robot: ${response.statusText}`);
@@ -177,6 +237,7 @@ function RobotStatusPage() {
                     <TableCell sx={{ fontWeight: 'bold' }}>ID Robot</TableCell>
                     <TableCell sx={{ fontWeight: 'bold' }}>Nombre</TableCell>
                     <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Estado Operativo</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Incidentes Pendientes</TableCell>
                     {userRole === 'admin' && (
                       <TableCell align="center" sx={{ fontWeight: 'bold' }}>Acciones</TableCell>
                     )}
@@ -189,16 +250,31 @@ function RobotStatusPage() {
                         <TableCell>{robot.id}</TableCell>
                         <TableCell>{robot.name}</TableCell>
                         <TableCell sx={{ textAlign: 'center' }}>
-                            {robot.is_operational ? 
-                                <CheckCircleIcon color="success" /> : 
-                                <CancelIcon color="error" />
-                            }
-                            <Typography variant="caption" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' }}}>
-                                {robot.is_operational ? "Operativo" : "No Operativo"}
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {robot.state.toLowerCase() === 'operativo' && (
+                              <CheckCircleIcon color="success" />
+                            )}
+                            {robot.state.toLowerCase() === 'fuera de servicio' && (
+                              <CancelIcon color="error" />
+                            )}
+                            {robot.state.toLowerCase() === 'en reparación' && (
+                              <CancelIcon sx={{ color: 'goldenrod' }} />
+                            )}
+                            <Typography variant="caption" sx={{ ml: 1, display: { xs: 'none', sm: 'inline' } }}>
+                              {robot.state}
                             </Typography>
+                          </Box>
+                        </TableCell>
+                        <TableCell sx={{ textAlign: 'center' }}>
+                          {robot.unresolved_incidents ?? 0}
                         </TableCell>
                         {userRole === 'admin' && (
                           <TableCell align="center">
+                            <Tooltip title="Editar Robot">
+                              <IconButton size="small" color="primary" onClick={() => handleOpenEditModal(robot)}>
+                                <EditIcon fontSize="inherit" />
+                              </IconButton>
+                            </Tooltip>
                             <Tooltip title="Eliminar Robot">
                               <IconButton size="small" color="error" onClick={() => handleDeleteRobot(robot.id, robot.name)}>
                                 <DeleteIcon fontSize="inherit" />
@@ -253,6 +329,42 @@ function RobotStatusPage() {
                     {isSubmitting ? 'Creando...' : 'Crear Robot'}
                 </Button>
             </DialogActions>
+        </Dialog>
+        <Dialog
+          open={editModalOpen}
+          onClose={handleCloseEditModal}
+          TransitionComponent={Transition}
+          fullWidth
+          maxWidth="sm"
+          aria-labelledby="edit-robot-dialog-title"
+        >
+          <DialogTitle id="edit-robot-dialog-title">Editar Robot</DialogTitle>
+          <DialogContent dividers>
+            <Box ref={editFormRef}>
+              {editModalOpen && robotToEdit && (
+              <RobotForm
+                onSubmit={handleUpdateRobot}
+                onCancel={handleCloseEditModal}
+                isLoading={isSubmitting}
+                initialData={robotToEdit}
+              />
+              )}
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseEditModal} disabled={isSubmitting}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                const form = editFormRef.current.querySelector('form') || editFormRef.current;
+                form?.requestSubmit?.();
+              }}
+              variant="contained"
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {isSubmitting ? 'Actualizando...' : 'Guardar Cambios'}
+            </Button>
+          </DialogActions>
         </Dialog>
 
       {/* --- Snackbar para Notificaciones --- */}

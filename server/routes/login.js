@@ -13,8 +13,6 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // POST /login
 router.post('/login', async (req, res, next) => {
   const { username, password } = req.body;
-  console.log('Intento de login:', username);
-
   if (!username || !password) {
     return res.status(400).json({ error: 'Username o email y password son obligatorios.' });
   }
@@ -32,9 +30,6 @@ router.post('/login', async (req, res, next) => {
 
     const user = result.rows[0];
 
-    console.log(user);
-    console.log("ASSD SDGSHDGHSGDHSGDHSGHASD");
-
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ error: 'Credenciales inválidas.' });
@@ -44,8 +39,6 @@ router.post('/login', async (req, res, next) => {
     const { password: _, ...userWithoutPassword } = user;
 
     // Crear token
-    console.log("WSAEFSGFS");
-    console.log(user);
     const token = jwt.sign(
       {
         id: user.id,
@@ -57,8 +50,6 @@ router.post('/login', async (req, res, next) => {
       JWT_SECRET,
       { expiresIn: '1h' }
     );
-    console.log("sss")
-    console.log(token)
 
     // Establecer cookie con el token
     res.cookie('access_token', token, {
@@ -95,13 +86,11 @@ router.get('/protected', (req, res)=>{
         res.status(401).send('Acceso no autorizado')
     }
 })
-router.get('/protected2', (req, res)=>{
-    const { user } = req.session
-    if(!user) {
-      console.timeLog("AAAAAAAA")
-      console.log(user)
-      return res.statu(403).send("Acceso no autorizado")}
-})
+// router.get('/protected2', (req, res)=>{
+//     const { user } = req.session
+//     if(!user) {
+//       return res.statu(403).send("Acceso no autorizado")}
+// })
 
 
 module.exports = router;
