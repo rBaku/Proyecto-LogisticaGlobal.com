@@ -30,8 +30,14 @@ describe('API /api/users (Integración)', () => {
     await query(`
       INSERT INTO users (id, username, email, password, role, full_name)
       VALUES 
-        (9991, 'testuser1', 'test1@example.com', 'hashed', 'user', 'User One'),
+        (9991, 'testuser1', 'test1@example.com', 'hashed', 'user', 'User One')
+      ON CONFLICT (id) DO NOTHING
+    `);
+    await query(`
+      INSERT INTO users (id, username, email, password, role, full_name)
+      VALUES 
         (9992, 'testuser2', 'test2@example.com', 'hashed', 'admin', 'User Two')
+      ON CONFLICT (id) DO NOTHING
     `);
   });
 
