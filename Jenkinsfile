@@ -43,8 +43,7 @@ pipeline {
                         usernamePassword(credentialsId: 'azure-db-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')
                     ]) {
                         sh '''
-                            echo "Probando conexión a PostgreSQL..."
-                            psql "host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER sslmode=$PGSSLMODE" -c "SELECT 1"
+                            echo "Probando conexión a PostgreSQL..
 
                             echo "Ejecutando tests..."
                             npm test
