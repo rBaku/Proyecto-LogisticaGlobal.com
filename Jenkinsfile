@@ -38,7 +38,8 @@ pipeline {
                             'PGHOST=logisticabasedatos.postgres.database.azure.com',
                             'PGPORT=5432',
                             'PGDATABASE=postgres',
-                            'PGSSLMODE=require'
+                            'PGSSLMODE=require',
+                            'JWT_SECRET=supersecretoparaelbuild'
                         ]) {
                             sh '''
                                 echo "🔍 Ejecutando tests de backend..."
