@@ -13,6 +13,8 @@ import TableCell from '@mui/material/TableCell';
 import TableBody from '@mui/material/TableBody';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import html2canvas from 'html2canvas';
+import { Chart } from 'chart.js/auto';
 
 const months = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
@@ -35,34 +37,6 @@ function ReportPage() {
     byStatus: {}
   });
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-
-    doc.setFontSize(18);
-    doc.text('Reporte de Incidentes', 14, 22);
-
-    doc.setFontSize(12);
-    doc.text(`Periodo: ${period === 'monthly' ? `Mensual (${months[month - 1]} ${year})` : `Anual (${year})`}`, 14, 30);
-    doc.text(`Total: ${stats.total}`, 14, 36);
-    doc.text(`Gravedad promedio: ${stats.avgGravity}`, 14, 42);
-    doc.text(`Tiempo promedio de resolución: ${stats.avgResolutionTimeHours} hrs`, 14, 48);
-
-    autoTable(doc, {
-      head: [['Fecha', 'Robot', 'Tipo', 'Gravedad', 'Estado', 'Técnicos']],
-      body: data.map(i => [
-        new Date(i.incident_timestamp).toLocaleDateString(),
-        i.robot_id,
-        i.type,
-        i.gravity,
-        i.status,
-        (i.technicians || []).join(', ')
-      ]),
-      startY: 55,
-    });
-
-    doc.save('reporte_incidentes.pdf');
-  };
-
   useEffect(() => {
     const url = new URL('http://localhost:3001/api/report');
     url.searchParams.append('period', period);
@@ -82,13 +56,100 @@ function ReportPage() {
       });
   }, [period, year, month]);
 
+  useEffect(() => {
+    if (!stats.byType || !stats.byStatus) return;
+
+    const renderChart = (id, data, title) => {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+
+      if (Chart.getChart(id)) {
+        Chart.getChart(id).destroy();
+      }
+
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(data),
+          datasets: [{
+            label: title,
+            data: Object.values(data),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: false,
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: title }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    };
+
+    renderChart('chartByType', stats.byType, 'Incidentes por Tipo');
+    renderChart('chartByStatus', stats.byStatus, 'Incidentes por Estado');
+  }, [stats]);
+
+  const exportToPDF = async () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text('Reporte de Incidentes', 14, 22);
+
+    doc.setFontSize(12);
+    doc.text(`Periodo: ${period === 'monthly' ? `Mensual (${months[month - 1]} ${year})` : `Anual (${year})`}`, 14, 30);
+    doc.text(`Total: ${stats.total}`, 14, 36);
+    doc.text(`Gravedad promedio: ${stats.avgGravity}`, 14, 42);
+    doc.text(`Tiempo promedio de resolución: ${stats.avgResolutionTimeHours} hrs`, 14, 48);
+
+    let yOffset = 55;
+
+    const chartIds = ['chartByType', 'chartByStatus'];
+
+    // Esperar brevemente para asegurar que los gráficos estén renderizados
+    await new Promise(resolve => setTimeout(resolve, 500)); // 500ms
+
+    for (const id of chartIds) {
+      const canvas = document.getElementById(id);
+      if (canvas) {
+        try {
+          const imgData = await html2canvas(canvas).then(c => c.toDataURL('image/png'));
+          doc.addImage(imgData, 'PNG', 14, yOffset, 180, 80);
+          yOffset += 90;
+        } catch (error) {
+          console.error(`Error al capturar el canvas "${id}"`, error);
+        }
+      }
+    }
+
+    autoTable(doc, {
+      head: [['Fecha', 'Robot', 'Tipo', 'Gravedad', 'Estado', 'Técnicos']],
+      body: data.map(i => [
+        new Date(i.incident_timestamp).toLocaleDateString(),
+        i.robot_id,
+        i.type,
+        i.gravity,
+        i.status,
+        (i.technicians || []).join(', ')
+      ]),
+      startY: yOffset,
+    });
+
+    doc.save('reporte_incidentes.pdf');
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
       <Typography variant="h4" component="h1" gutterBottom align="center">
         Generar Reporte de Incidentes
       </Typography>
 
-      {/* Selector de periodo */}
       <FormControl fullWidth sx={{ mt: 2 }}>
         <InputLabel id="period-label">Periodo</InputLabel>
         <Select
@@ -102,7 +163,6 @@ function ReportPage() {
         </Select>
       </FormControl>
 
-      {/* Selector de año */}
       <FormControl fullWidth sx={{ mt: 2 }}>
         <InputLabel id="year-label">Año</InputLabel>
         <Select
@@ -117,7 +177,6 @@ function ReportPage() {
         </Select>
       </FormControl>
 
-      {/* Selector de mes (solo si es mensual) */}
       {period === 'monthly' && (
         <FormControl fullWidth sx={{ mt: 2 }}>
           <InputLabel id="month-label">Mes</InputLabel>
@@ -144,6 +203,11 @@ function ReportPage() {
         <li>Tipos de incidente: {stats.byType ? Object.entries(stats.byType).map(([type, count]) => `${type}: ${count}`).join(', ') : '-'}</li>
         <li>Estados: {stats.byStatus ? Object.entries(stats.byStatus).map(([status, count]) => `${status}: ${count}`).join(', ') : '-'}</li>
       </ul>
+
+      <div style={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }}>
+        <canvas id="chartByType" width="400" height="200"></canvas>
+        <canvas id="chartByStatus" width="400" height="200"></canvas>
+      </div>
 
       <Typography variant="h6" sx={{ mt: 3 }}>
         Incidentes Detallados
