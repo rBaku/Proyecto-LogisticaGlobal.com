@@ -5,13 +5,6 @@ pipeline {
         nodejs 'NodeJS_18'
     }
 
-    environment {
-        PGHOST = 'logisticabasedatos.postgres.database.azure.com'
-        PGPORT = '5432'
-        PGDATABASE = 'postgres'
-        PGSSLMODE = 'require'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -39,17 +32,23 @@ pipeline {
         stage('Test Server (Backend)') {
             steps {
                 dir('server') {
-                    withCredentials([
-                        usernamePassword(credentialsId: 'azure-db-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')
-                    ]) {
-                        sh '''
-                            echo "Ejecutando tests..."
-                            npm test
-                        '''
+                        withEnv([
+                            'PGUSER=sqlmental',
+                            'PGPASSWORD=elonmusk69!',
+                            'PGHOST=logisticabasedatos.postgres.database.azure.com',
+                            'PGPORT=5432',
+                            'PGDATABASE=postgres',
+                            'PGSSLMODE=require',
+                            'JWT_SECRET=supersecretoparaelbuild'
+                        ]) {
+                            sh '''
+                                echo "🔍 Ejecutando tests de backend..."
+                                npm test
+                            '''
+                        }
                     }
                 }
             }
-        }
     }
 
     post {
