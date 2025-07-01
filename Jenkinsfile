@@ -5,6 +5,13 @@ pipeline {
         nodejs 'NodeJS_18'
     }
 
+    environment {
+        PGHOST = 'logisticabasedatos.postgres.database.azure.com'
+        PGPORT = '5432'
+        PGDATABASE = 'postgres'
+        PGSSLMODE = 'require'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -32,7 +39,17 @@ pipeline {
         stage('Test Server (Backend)') {
             steps {
                 dir('server') {
-                    sh 'npm test'
+                    withCredentials([
+                        usernamePassword(credentialsId: 'azure-db-user', usernameVariable: 'PGUSER', passwordVariable: 'PGPASSWORD')
+                    ]) {
+                        sh '''
+                            echo "Probando conexión a PostgreSQL..."
+                            psql "host=$PGHOST port=$PGPORT dbname=$PGDATABASE user=$PGUSER sslmode=$PGSSLMODE" -c "SELECT 1"
+
+                            echo "Ejecutando tests..."
+                            npm test
+                        '''
+                    }
                 }
             }
         }
