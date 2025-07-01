@@ -21,6 +21,7 @@ async function initializePool() {
     });
 
     try {
+      console.log(`Intentando conectar como ${process.env.PGUSER} al host ${process.env.PGHOST}`);
       await pool.query('SELECT 1'); // Verifica conexión
       console.log('✅ Conexión a base de datos exitosa');
     } catch (err) {
