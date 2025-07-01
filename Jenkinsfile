@@ -32,9 +32,8 @@ pipeline {
         stage('Test Server (Backend)') {
             steps {
                 dir('server') {
-                    withCredentials([string(credentialsId: 'id_credencial', variable: 'PGPASSWORD')]) {
                         withEnv([
-                            'PGUSER=andres.saldiass@usm.cl',
+                            'PGUSER=sqlmental',
                             'PGHOST=logisticabasedatos.postgres.database.azure.com',
                             'PGPORT=5432',
                             'PGDATABASE=postgres',
