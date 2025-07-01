@@ -38,6 +38,30 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 - *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más [técnicos](../../wiki/Vista-de-técnicos) que se revisen los robots que estuvieron involucrados, por ello se creó una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
 
+## Stack tecnológico
+
+El sistema utiliza la siguiente tecnología:
+
+### Backend y Frontend
+
+- PostgreSQL (base de datos)
+- Express (Backend)
+- React (Frontend)
+- Node.js (Backend)
+- Microsoft Azure (servicio de nube)
+
+### Otras Tecnologías (Testing, automatización, organización)
+
+- Mocha/Chai (Testing)
+- Jenkins (Herramienta CI/CD)
+- Selenium (Automatización Testing)
+- Discord/Whatsapp (Comunicación)
+- Jira (Kanban, organización requisitos)
+- Slack (Integración mensajes con herramientas)
+- Github (Repositorio código y documentación)
+
+Para más información, dirigirse a la página de la wiki dedicada al [Stack tecnológico](../../wiki/Tecnologias-usadas-en-el-proyecto).
+
 ## Instrucciones de instalación
 
 1. Descargar el repositorio de la rama main.
