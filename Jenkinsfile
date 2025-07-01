@@ -34,6 +34,7 @@ pipeline {
                 dir('server') {
                         withEnv([
                             'PGUSER=sqlmental',
+                            'PGPASSWORD=elonmusk69!',
                             'PGHOST=logisticabasedatos.postgres.database.azure.com',
                             'PGPORT=5432',
                             'PGDATABASE=postgres',
