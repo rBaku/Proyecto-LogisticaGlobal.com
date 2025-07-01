@@ -32,10 +32,23 @@ pipeline {
         stage('Test Server (Backend)') {
             steps {
                 dir('server') {
-                    sh 'npm test'
+                        withEnv([
+                            'PGUSER=sqlmental',
+                            'PGPASSWORD=elonmusk69!',
+                            'PGHOST=logisticabasedatos.postgres.database.azure.com',
+                            'PGPORT=5432',
+                            'PGDATABASE=postgres',
+                            'PGSSLMODE=require',
+                            'JWT_SECRET=supersecretoparaelbuild'
+                        ]) {
+                            sh '''
+                                echo "🔍 Ejecutando tests de backend..."
+                                npm test
+                            '''
+                        }
+                    }
                 }
             }
-        }
     }
 
     post {
