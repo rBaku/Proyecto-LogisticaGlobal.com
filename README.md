@@ -14,7 +14,7 @@ Se crea un sistema de registro de incidencias relacionadas a los accidentes de r
 
 El sistema busca ser capaz de guardar y eliminar las incidencias, revisar y filtrar las incidencias guardadas, permitir modificar las incidencias en cada etapa que se maneja actualmente, solo permitiendo al usuario indicado modificar las incidencias en la etapa que le corresponde. Además, el sistema apoyara la creación del reporte mensual que actualmente realiza el supervisor.
 
-Aunque la empresa le gustaría tener un panel administrativo para gestionar las cuentas, se ha considerado que no es de lo más importante en el sistema, por lo que probablemente no se llegará a realizar, de forma similar, es posible que no se llegue a realizar pruebas sobre el uso del sistema en diversos dispositivos. Además, no se considera priorizar los requisitos no funcionales, pues se desarrollarán principalmente los requisitos funcionales del sistema.
+Pruebas con usuarios y de volumen de datos no han sido consideradas. Se han realizado todos los requisitos funcionales y la mayoria de los no funcionales
 
 ## Descripción del sistema
 
@@ -37,6 +37,8 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 - *Manejo de los robots*: Dentro de la empresa, una parte fundamental son los [robots](../../wiki/Robots-de-la-empresa), dentro del sistema se guardan los robots para que sean fácilmente accesibles al crear una incidencia, por lo que se tiene una página que es accesible desde la página inicial. Esta página despliega la lista de los robots guardados actualmente en el sistema, donde también se pueden eliminar estos robots y crear nuevos para ser guardados en el sistema.
 
 - *Vista de técnicos*: Luego de que un supervisor revise la incidencia, se le asigna a uno o más [técnicos](../../wiki/Vista-de-técnicos) que se revisen los robots que estuvieron involucrados, por ello se creó una vista para que los técnicos puedan conocer las incidencias que han sido asignados a ellos, mostrando una lista de incidentes, donde se pueden editar según el proceso que se sigue en la empresa.
+
+- *Reportes de Supervisor*: El supervisor requiere generar un [informe PDF](../../wiki/Reporte-de-incidentes) en periodos de los incidentes ocurridos en robots de la empresa. Se creo una vista exclusiva para ellos y los admins, que recopila la información y genera un pequeño resumen de la cantidad, gravedad y tipo de los incidentes. 
 
 ## Stack tecnológico
 
@@ -95,3 +97,5 @@ Para acceder a documentación que complementa y describe el proceso realizado pa
 - La documentación de las [pruebas](../../wiki/Pruebas-realizadas) realizadas hasta el momento, tanto para probar el Backend, como el Frontend.
 
 - Imagenes que sirven de [evidencias](../../wiki/Evidencias-del-trabajo-realizado) de los sistemas utilizados para mejorar la comunicación del equipo y facilitar el proceso de desarrollo, además de mostrar partes del código desarrollado para las entregas.
+
+- Los [requisitos no funcionales](../../wiki/Requisitos-no-funcionales) que se han considerado en el sistema, las pruebas que se han realizado y el alcance de lo realizado.
