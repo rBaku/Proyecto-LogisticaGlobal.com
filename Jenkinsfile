@@ -60,7 +60,7 @@ pipeline {
 
         success {
             script {
-                def logFile = readFile('server/resultado_tests.log')
+                def resultado = readFile('resultado_tests.log')
                 def passed = (logFile =~ /(\d+)\s+passing/).find() ? (logFile =~ /(\d+)\s+passing/)[0][1].toInteger() : 0
                 def failed = (logFile =~ /(\d+)\s+failing/).find() ? (logFile =~ /(\d+)\s+failing/)[0][1].toInteger() : 0
                 def total = passed + failed
