@@ -57,10 +57,10 @@ pipeline {
             deleteDir()
         }
         success {
-            slackSend(channel: '#devops', color: 'good', message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            slackSend(channel: '#jenkins', color: 'good', message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
         failure {
-            slackSend(channel: '#devops', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            slackSend(channel: '#djenkins', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
     }
 }
