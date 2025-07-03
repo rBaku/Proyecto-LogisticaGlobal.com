@@ -44,7 +44,6 @@ pipeline {
                         sh '''
                             echo "🔍 Ejecutando tests de backend..."
                             npm test | tee resultado_tests.log
-                            cp resultado_tests.log ../resultado_tests.log
                         '''
                     }
                 }
@@ -53,29 +52,33 @@ pipeline {
     }
 
     post {
-        always {
-            echo '🧹 Limpiando workspace'
-            deleteDir()
-        }
-
         success {
             script {
-                def resultado = readFile('resultado_tests.log')
-                def passed = (logFile =~ /(\d+)\s+passing/).find() ? (logFile =~ /(\d+)\s+passing/)[0][1].toInteger() : 0
-                def failed = (logFile =~ /(\d+)\s+failing/).find() ? (logFile =~ /(\d+)\s+failing/)[0][1].toInteger() : 0
-                def total = passed + failed
-                def porcentaje = total > 0 ? (passed * 100 / total) : 0
+                def logContent = readFile('server/resultado_tests.log')
+                def match = logContent =~ /(\d+)\s+passing.*\n\s*(\d+)\s+failing/
+                def summary = ""
 
-                def mensaje = """✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}
-🧪 ${porcentaje}% de pruebas superadas
-🧭 100% de pruebas Selenium completadas"""
+                if (match) {
+                    def passed = match[0][1].toInteger()
+                    def failed = match[0][2].toInteger()
+                    def total = passed + failed
+                    def percentage = (passed * 100) / total
+                    summary = "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n🧪 ${percentage}% de tests pasaron (${passed}/${total})\n✅ 100% de pruebas Selenium exitosas"
+                } else {
+                    summary = "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n🧪 No se pudo calcular el porcentaje de tests.\n✅ 100% de pruebas Selenium exitosas"
+                }
 
-                slackSend(channel: '#jenkins', color: 'good', message: mensaje)
+                slackSend(channel: '#jenkins', color: 'good', message: summary)
             }
         }
 
         failure {
             slackSend(channel: '#jenkins', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+        }
+
+        always {
+            echo '🧹 Limpiando workspace'
+            deleteDir()
         }
     }
 }
