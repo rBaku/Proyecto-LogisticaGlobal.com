@@ -44,6 +44,7 @@ pipeline {
                         sh '''
                             echo "🔍 Ejecutando tests de backend..."
                             npm test | tee resultado_tests.log
+                            cp resultado_tests.log ../resultado_tests.log
                         '''
                     }
                 }
