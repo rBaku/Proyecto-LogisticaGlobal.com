@@ -1,13 +1,6 @@
-
-/*async function crearHash() {
-  const hashed = await bcrypt.hash('miclave123', 10);
-  console.log('Hash generado:', hashed);
-}
-crearHash();*/
-
 const express = require('express');
 const router = express.Router();
-const pool = require('../db');
+const { initializePool } = require('../db');
 const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = 10;
@@ -24,6 +17,8 @@ router.post('/', authMiddleware, onlyAdmin, async (req, res, next) => {
   }
 
   try {
+    const pool = await initializePool();
+
     const checkQuery = 'SELECT id FROM users WHERE username = $1 OR email = $2';
     const checkResult = await pool.query(checkQuery, [username, email]);
 
@@ -47,10 +42,12 @@ router.post('/', authMiddleware, onlyAdmin, async (req, res, next) => {
 });
 
 // GET /api/users - Obtener todos los usuarios
-router.get('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
+router.get('/', authMiddleware, authorizeRoles('admin', 'supervisor', 'jefe_turno'), async (req, res, next) => {
   const { role } = req.query;
   try {
+    const pool = await initializePool();
     let result;
+
     if (role) {
       result = await pool.query(
         'SELECT id, username, email, role, full_name FROM users WHERE role = $1 ORDER BY id;',
@@ -61,6 +58,7 @@ router.get('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turn
         'SELECT id, username, email, role, full_name FROM users ORDER BY id;'
       );
     }
+
     res.json(result.rows);
   } catch (error) {
     console.error('Error en GET /api/users:', error);
@@ -69,13 +67,19 @@ router.get('/', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turn
 });
 
 // GET /api/users/:id - Obtener un usuario por ID
-router.get('/:id', authMiddleware, authorizeRoles('admin', 'supervisor', "jefe_turno"), async (req, res, next) => {
+router.get('/:id', authMiddleware, authorizeRoles('admin', 'supervisor', 'jefe_turno'), async (req, res, next) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('SELECT id, username, email, role, full_name FROM users WHERE id = $1', [id]);
+    const pool = await initializePool();
+    const result = await pool.query(
+      'SELECT id, username, email, role, full_name FROM users WHERE id = $1',
+      [id]
+    );
+
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
     }
+
     res.json(result.rows[0]);
   } catch (error) {
     console.error(`Error en GET /api/users/${id}:`, error);
@@ -93,6 +97,7 @@ router.put('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
   }
 
   try {
+    const pool = await initializePool();
     let queryFields = [];
     let values = [];
     let paramIndex = 1;
@@ -147,10 +152,13 @@ router.put('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
 router.delete('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
   const { id } = req.params;
   try {
+    const pool = await initializePool();
     const result = await pool.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+
     if (result.rowCount === 0) {
       return res.status(404).json({ error: 'Usuario no encontrado.' });
     }
+
     res.status(204).send();
   } catch (error) {
     console.error(`Error en DELETE /api/users/${id}:`, error);
@@ -158,14 +166,20 @@ router.delete('/:id', authMiddleware, onlyAdmin, async (req, res, next) => {
   }
 });
 
+// GET /api/users/username/:username - Buscar por username
 router.get('/username/:username', authMiddleware, async (req, res) => {
   const { username } = req.params;
   try {
+    const pool = await initializePool();
     const result = await pool.query(
       'SELECT id, username, full_name, role FROM users WHERE username = $1',
       [username]
     );
-    if (result.rowCount === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error buscando usuario por username:', err);
