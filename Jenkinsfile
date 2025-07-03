@@ -39,7 +39,7 @@ pipeline {
                             'PGPORT=5432',
                             'PGDATABASE=postgres',
                             'PGSSLMODE=require',
-                            'JWT_SECRET=supersecretoparaelbuild'
+                            'JWT_SECRET=secreto-super-seguro'
                         ]) {
                             sh '''
                                 echo "🔍 Ejecutando tests de backend..."
