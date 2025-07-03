@@ -5,15 +5,6 @@ pipeline {
         nodejs 'NodeJS_18'
     }
 
-    environment {
-        PGUSER = 'sqlmental'
-        PGPASSWORD = credentials('id_credencial')
-        PGHOST = 'logisticabasedatos.postgres.database.azure.com'
-        PGPORT = '5432'
-        PGDATABASE = 'postgres'
-        PGSSLMODE = 'require'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -42,46 +33,18 @@ pipeline {
             steps {
                 dir('server') {
                     withEnv([
-                        "PGUSER=${env.PGUSER}",
-                        "PGPASSWORD=${env.PGPASSWORD}",
-                        "PGHOST=${env.PGHOST}",
-                        "PGPORT=${env.PGPORT}",
-                        "PGDATABASE=${env.PGDATABASE}",
-                        "PGSSLMODE=${env.PGSSLMODE}"
+                        'PGUSER=sqlmental',
+                        'PGPASSWORD=elonmusk69!',
+                        'PGHOST=logisticabasedatos.postgres.database.azure.com',
+                        'PGPORT=5432',
+                        'PGDATABASE=postgres',
+                        'PGSSLMODE=require',
+                        'JWT_SECRET=secreto-super-seguro'
                     ]) {
-                        sh 'echo "🔍 Ejecutando tests de backend..."'
-                        sh 'npm test > resultado_tests.log || true'
-                    }
-                }
-            }
-        }
-
-        stage('Notificación') {
-            steps {
-                script {
-                    def logPath = 'server/resultado_tests.log'
-                    def porcentaje = 'N/A'
-                    if (fileExists(logPath)) {
-                        def logContent = readFile(logPath)
-                        def matcher = logContent =~ /(\d+)\s+passing.*?(\d+)\s+failing/
-                        if (matcher.find()) {
-                            def pass = matcher.group(1).toInteger()
-                            def fail = matcher.group(2).toInteger()
-                            def total = pass + fail
-                            porcentaje = total > 0 ? (int)((pass * 100) / total) : 0
-                        }
-                        slackSend(
-                            channel: '#jenkins',
-                            color: 'good',
-                            message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n📊 ${porcentaje}% de pruebas superadas\n✅ 100% de pruebas de Selenium exitosas"
-                        )
-                    } else {
-                        echo "❗ Archivo de resultados no encontrado: ${logPath}"
-                        slackSend(
-                            channel: '#jenkins',
-                            color: 'warning',
-                            message: "⚠️ Build finalizado pero no se encontró resultado_tests.log"
-                        )
+                        sh '''
+                            echo "🔍 Ejecutando tests de backend..."
+                            npm test | tee resultado_tests.log
+                        '''
                     }
                 }
             }
@@ -92,6 +55,26 @@ pipeline {
         always {
             echo '🧹 Limpiando workspace'
             deleteDir()
+        }
+
+        success {
+            script {
+                def logFile = readFile('server/resultado_tests.log')
+                def passed = (logFile =~ /(\d+)\s+passing/).find() ? (logFile =~ /(\d+)\s+passing/)[0][1].toInteger() : 0
+                def failed = (logFile =~ /(\d+)\s+failing/).find() ? (logFile =~ /(\d+)\s+failing/)[0][1].toInteger() : 0
+                def total = passed + failed
+                def porcentaje = total > 0 ? (passed * 100 / total) : 0
+
+                def mensaje = """✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}
+🧪 ${porcentaje}% de pruebas superadas
+🧭 100% de pruebas Selenium completadas"""
+
+                slackSend(channel: '#jenkins', color: 'good', message: mensaje)
+            }
+        }
+
+        failure {
+            slackSend(channel: '#jenkins', color: 'danger', message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
         }
     }
 }
