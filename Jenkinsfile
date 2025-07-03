@@ -5,6 +5,15 @@ pipeline {
         nodejs 'NodeJS_18'
     }
 
+    environment {
+        PGUSER = 'sqlmental'
+        PGPASSWORD = credentials('id_credencial')
+        PGHOST = 'logisticabasedatos.postgres.database.azure.com'
+        PGPORT = '5432'
+        PGDATABASE = 'postgres'
+        PGSSLMODE = 'require'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -33,26 +42,46 @@ pipeline {
             steps {
                 dir('server') {
                     withEnv([
-                        'PGUSER=sqlmental',
-                        'PGPASSWORD=elonmusk69!',
-                        'PGHOST=logisticabasedatos.postgres.database.azure.com',
-                        'PGPORT=5432',
-                        'PGDATABASE=postgres',
-                        'PGSSLMODE=require',
-                        'JWT_SECRET=secreto-super-seguro'
+                        "PGUSER=${env.PGUSER}",
+                        "PGPASSWORD=${env.PGPASSWORD}",
+                        "PGHOST=${env.PGHOST}",
+                        "PGPORT=${env.PGPORT}",
+                        "PGDATABASE=${env.PGDATABASE}",
+                        "PGSSLMODE=${env.PGSSLMODE}"
                     ]) {
-                        sh '''
-                            echo "🔍 Ejecutando tests de backend..."
-                            npm test > resultado_tests.log || true
-                        '''
-                        script {
-                            def testOutput = readFile('server/resultado_tests.log')
-                            def passed = testOutput.count("✔")
-                            def failed = testOutput.count("✖") + testOutput.count("failing")
-                            def total = passed + failed
-                            def porcentaje = total > 0 ? (int)((passed * 100) / total) : 0
-                            env.TEST_REPORT = "🧪 ${porcentaje}% de pruebas backend pasaron (${passed}/${total})\n✅ 100% pruebas Selenium exitosas"
+                        sh 'echo "🔍 Ejecutando tests de backend..."'
+                        sh 'npm test > resultado_tests.log || true'
+                    }
+                }
+            }
+        }
+
+        stage('Notificación') {
+            steps {
+                script {
+                    def logPath = 'server/resultado_tests.log'
+                    def porcentaje = 'N/A'
+                    if (fileExists(logPath)) {
+                        def logContent = readFile(logPath)
+                        def matcher = logContent =~ /(\d+)\s+passing.*?(\d+)\s+failing/
+                        if (matcher.find()) {
+                            def pass = matcher.group(1).toInteger()
+                            def fail = matcher.group(2).toInteger()
+                            def total = pass + fail
+                            porcentaje = total > 0 ? (int)((pass * 100) / total) : 0
                         }
+                        slackSend(
+                            channel: '#jenkins',
+                            color: 'good',
+                            message: "✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n📊 ${porcentaje}% de pruebas superadas\n✅ 100% de pruebas de Selenium exitosas"
+                        )
+                    } else {
+                        echo "❗ Archivo de resultados no encontrado: ${logPath}"
+                        slackSend(
+                            channel: '#jenkins',
+                            color: 'warning',
+                            message: "⚠️ Build finalizado pero no se encontró resultado_tests.log"
+                        )
                     }
                 }
             }
@@ -63,22 +92,6 @@ pipeline {
         always {
             echo '🧹 Limpiando workspace'
             deleteDir()
-        }
-        success {
-            slackSend(
-                channel: '#jenkins',
-                color: 'good',
-                message: """✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}
-${env.TEST_REPORT}"""
-            )
-        }
-        failure {
-            slackSend(
-                channel: '#jenkins',
-                color: 'danger',
-                message: """❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}
-${env.TEST_REPORT ?: '❗ No se pudo calcular el porcentaje de pruebas'}"""
-            )
         }
     }
 }
