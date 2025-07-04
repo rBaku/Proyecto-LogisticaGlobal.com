@@ -1,6 +1,6 @@
 // db.js
 const { Pool } = require('pg');
-
+require('dotenv').config();
 // Pool global para usar en todas las pruebas/rutas
 let pool;
 
@@ -9,15 +9,14 @@ let pool;
  */
 async function initializePool() {
   if (!pool) {
+    const useSSL = process.env.PGSSLMODE === 'require' || process.env.NODE_ENV === 'production';
     pool = new Pool({
       user: process.env.PGUSER,
       password: process.env.PGPASSWORD,
       host: process.env.PGHOST,
       port: process.env.PGPORT,
       database: process.env.PGDATABASE,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      ssl: useSSL ? { rejectUnauthorized: false } : false,
     });
 
     try {
@@ -29,6 +28,7 @@ async function initializePool() {
       throw err;
     }
   }
+  return pool;
 }
 
 /**

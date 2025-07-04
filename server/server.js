@@ -1,42 +1,38 @@
 const express = require('express');
-const pool = require('./db');
-const cookiePaser = require('cookie-parser');
-const JWT_SECRET = process.env.JWT_SECRET;
-
-const app = express();
-
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const { initializePool } = require('./db'); // 👈 Asegúrate de importar esto
 const incidentesRoutes = require('./routes/incidentes');
 const robotsRoutes = require('./routes/robots');
 const loginRoutes = require('./routes/login');
 const usersRoutes = require('./routes/users');
 const reportRoutes = require('./routes/report');
 
+const app = express();
 const corsOptions = {
-  origin: 'http://localhost:3000', // URL de tu frontend React
-  credentials: true, // ← necesario para permitir cookies
+  origin: 'http://localhost:3000',
+  credentials: true,
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
-app.use(cookiePaser());
+app.use(cookieParser());
 
-app.use('/api/incidentes', incidentesRoutes);
-app.use('/api/robots', robotsRoutes);
-app.use('/api/login', loginRoutes);
-app.use('/api/users', usersRoutes);
-app.use('/api/report', reportRoutes);
+initializePool()
+  .then(() => {
+    // ✅ Registrar rutas después de inicializar la conexión
+    app.use('/api/incidentes', incidentesRoutes);
+    app.use('/api/robots', robotsRoutes);
+    app.use('/api/login', loginRoutes);
+    app.use('/api/users', usersRoutes);
+    app.use('/api/report', reportRoutes);
 
-app.listen(3001, () => {
-  console.log('Servidor corriendo en el puerto 3001');
-});
-
-/*app.use((req,res,next)=>{
-  const token=req.cookies.access_token
-  req.session = {user: null}
-  try{
-    const data = jwt.verify(token, JWT_SECRET)
-    req.session.user=data
-  } catch{}
-  next()
-})*/
+    // ✅ Iniciar servidor solo si la conexión fue exitosa
+    app.listen(3001, () => {
+      console.log('🚀 Servidor corriendo en el puerto 3001');
+    });
+  })
+  .catch((err) => {
+    console.error('❌ Error al inicializar pool de base de datos:', err.message);
+    process.exit(1); // Sale si la conexión falla
+  });
