@@ -279,7 +279,8 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
     assigned_technicians,
     status,
     gravity,
-    technician_comment
+    technician_comment,
+    fall_back_type
   } = req.body;
 
   if (!status) {
@@ -343,6 +344,8 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
       addChange('Tipo', currentIncident.type, type);
       addChange('Causa', currentIncident.cause, cause);
       addChange('Comentario Técnico', currentIncident.technician_comment, technician_comment);
+      addChange('Estado del Robot (fallback)', currentIncident.fall_back_type, fall_back_type);
+      
 
       const prevTechs = (currentIncident.current_technicians || []).map(t => t.name).sort();
 
@@ -369,7 +372,7 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         'type = COALESCE($4, type)',
         'cause = COALESCE($5, cause)',
         'status = COALESCE($6, status)',
-        'gravity = $7',
+        'gravity = COALESCE($7, gravity)',
         'technician_comment = COALESCE($8, technician_comment)',
         'updated_at = NOW()',
         'updated_by = $9'
@@ -386,6 +389,11 @@ router.put('/:id', authMiddleware, async (req, res, next) => {
         technician_comment,
         currentUserId
       ];
+      if (fall_back_type && fall_back_type !== 'No cambiar') {
+        fields.push(`fall_back_type = $${values.length + 1}`);
+        values.push(fall_back_type);
+        addChange('Estado del Robot (fallback)', currentIncident.fall_back_type, fall_back_type);
+      }
 
       if (status === 'Firmado') {
         fields.push(`signed_by_user_id = $${values.length + 1}`);
