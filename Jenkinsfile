@@ -12,6 +12,8 @@ pipeline {
         PGPORT = '5432'
         PGDATABASE = 'postgres'
         PGSSLMODE = 'require'
+        JWT_SECRET = 'secreto-super-seguro'
+        
     }
 
     stages {
