@@ -1,48 +1,49 @@
+// db.js
 const { Pool } = require('pg');
-const { DefaultAzureCredential } = require('@azure/identity');
 require('dotenv').config();
-
+// Pool global para usar en todas las pruebas/rutas
 let pool;
 
+/**
+ * Inicializa el pool de conexiones con los valores del entorno.
+ */
 async function initializePool() {
-  if (pool) return pool; // Si ya está inicializado, retorna el pool
-
-  const credential = new DefaultAzureCredential();
-  try {
-    const token = await credential.getToken("https://ossrdbms-aad.database.windows.net/.default");
-
+  if (!pool) {
+    const useSSL = process.env.PGSSLMODE === 'require' || process.env.NODE_ENV === 'production';
     pool = new Pool({
-      host: process.env.DB_HOST, // Leído desde .env
-      user: process.env.DB_USER, // Leído desde .env
-      database: process.env.DB_NAME, // Leído desde .env
-      port: parseInt(process.env.DB_PORT, 10), // Leído desde .env y convertido a número
-      password: token.token,
-      ssl: { rejectUnauthorized: false },
-      idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 5000
+      user: process.env.PGUSER,
+      password: process.env.PGPASSWORD,
+      host: process.env.PGHOST,
+      port: process.env.PGPORT,
+      database: process.env.PGDATABASE,
+      ssl: useSSL ? { rejectUnauthorized: false } : false,
     });
 
-    //console.log('Pool de base de datos inicializado');
-    return pool;
-  } catch (error) {
-    console.error('Error al obtener el token de Azure:', error);
-    throw error; // Re-lanzamos el error para que se maneje donde se llama la función
+    try {
+      console.log(`Intentando conectar como ${process.env.PGUSER} al host ${process.env.PGHOST}`);
+      await pool.query('SELECT 1'); // Verifica conexión
+      console.log('✅ Conexión a base de datos exitosa');
+    } catch (err) {
+      console.error('❌ Error conectando a la base de datos:', err.message);
+      throw err;
+    }
   }
+  return pool;
+}
+
+/**
+ * Realiza una consulta SQL utilizando el pool.
+ * @param {string} text - Consulta SQL.
+ * @param {Array} params - Parámetros opcionales.
+ */
+async function query(text, params) {
+  if (!pool) {
+    throw new Error('El pool no ha sido inicializado. Llama a initializePool primero.');
+  }
+  return pool.query(text, params);
 }
 
 module.exports = {
   initializePool,
-  query: async (text, params) => {
-    if (!pool) {
-      // Asegurarnos de que el pool ha sido inicializado
-      await initializePool(); // Llamamos a initializePool si no se ha hecho previamente
-    }
-
-    try {
-      return await pool.query(text, params);
-    } catch (err) {
-      console.error(`Error en la consulta "${text}":`, err);
-      throw err;
-    }
-  }
+  query,
 };

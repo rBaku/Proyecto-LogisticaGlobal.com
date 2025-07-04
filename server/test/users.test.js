@@ -2,10 +2,11 @@ const request = require('supertest');
 const express = require('express');
 const chai = require('chai');
 const jwt = require('jsonwebtoken');
-const { query, initializePool } = require('../db');
+const {initializePool } = require('../db');
 const usersRouter = require('../routes/users');
 const expect = chai.expect;
 const cookieParser = require('cookie-parser');
+let pool;
 
 describe('API /api/users (Integración)', () => {
   let app;
@@ -14,7 +15,7 @@ describe('API /api/users (Integración)', () => {
   before(async function () {
     this.timeout(10000);
 
-    await initializePool();
+    pool = await initializePool();
 
     // Crear la app con los middlewares reales
     app = express();
@@ -24,25 +25,38 @@ describe('API /api/users (Integración)', () => {
   });
 
   beforeEach(async () => {
-    // Generar un token válido antes de cada test
     token = jwt.sign({ id: 9992, role: 'admin' }, process.env.JWT_SECRET);
 
-    await query(`
-      INSERT INTO users (id, username, email, password, role, full_name)
-      VALUES 
-        (9991, 'testuser1', 'test1@example.com', 'hashed', 'user', 'User One')
-      ON CONFLICT (id) DO NOTHING
-    `);
-    await query(`
-      INSERT INTO users (id, username, email, password, role, full_name)
-      VALUES 
-        (9992, 'testuser2', 'test2@example.com', 'hashed', 'admin', 'User Two')
-      ON CONFLICT (id) DO NOTHING
-    `);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      await client.query(`
+        INSERT INTO users (id, username, email, password, role, full_name)
+        VALUES 
+          (99991, 'testuser1', 'test1@example.com', 'hashed', 'supervisor', 'User One')
+        ON CONFLICT (id) DO NOTHING
+      `);
+
+      await client.query(`
+        INSERT INTO users (id, username, email, password, role, full_name)
+        VALUES 
+          (99992, 'testuser2', 'test2@example.com', 'hashed', 'admin', 'User Two')
+        ON CONFLICT (id) DO NOTHING
+      `);
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   });
 
   afterEach(async () => {
-    await query('DELETE FROM users WHERE id >= 9991');
+    await pool.query('DELETE FROM users WHERE id >= 99991');
+    await pool.query('DELETE FROM users WHERE username = $1', ['newuser']);
   });
 
   // Test con token válido
@@ -59,14 +73,14 @@ describe('API /api/users (Integración)', () => {
 
   it('GET /:id debería devolver un usuario existente', async () => {
     const res = await request(app)
-      .get('/api/users/9991')
+      .get('/api/users/99991')
       .set('Cookie', [`access_token=${token}`])
     expect(res.status).to.equal(200);
     expect(res.body).to.include({
-      id: 9991,
+      id: 99991,
       username: 'testuser1',
       email: 'test1@example.com',
-      role: 'user',
+      role: 'supervisor',
       full_name: 'User One'
     });
   });
@@ -93,7 +107,7 @@ describe('API /api/users (Integración)', () => {
       full_name: 'New User'
     });
 
-    await query('DELETE FROM users WHERE username = $1', ['newuser']);
+    await pool.query('DELETE FROM users WHERE username = $1', ['newuser']);
   });
 
   it('POST / debería fallar si falta username', async () => {
@@ -125,7 +139,7 @@ describe('API /api/users (Integración)', () => {
 
   it('PUT /:id debería actualizar un usuario', async () => {
     const res = await request(app)
-      .put('/api/users/9991')
+      .put('/api/users/99991')
       .set('Cookie', `access_token=${token}`)
       .send({
         full_name: 'Actualizado User One',
@@ -134,7 +148,7 @@ describe('API /api/users (Integración)', () => {
 
     expect(res.status).to.equal(200);
     expect(res.body).to.include({
-      id: 9991,
+      id: 99991,
       full_name: 'Actualizado User One',
       role: 'supervisor'
     });
@@ -142,7 +156,7 @@ describe('API /api/users (Integración)', () => {
 
   it('PUT /:id debería devolver 404 si no existe', async () => {
     const res = await request(app)
-      .put('/api/users/9999')
+      .put('/api/users/99999')
       .set('Cookie', `access_token=${token}`)
       .send({ full_name: 'No Existe' });
 
@@ -151,19 +165,19 @@ describe('API /api/users (Integración)', () => {
   });
 
   it('DELETE /:id debería eliminar un usuario', async () => {
-    await query(`
+    await pool.query(`
       INSERT INTO users (id, username, email, password, role)
-      VALUES (9993, 'deleteuser', 'delete@example.com', 'hashed', 'user')
+      VALUES (99995, 'deleteuser', 'delete@example.com', 'hashed', 'supervisor')
     `);
 
     const res = await request(app)
-      .delete('/api/users/9993')
+      .delete('/api/users/99995')
       .set('Cookie', [`access_token=${token}`])
 
     expect(res.status).to.equal(204);
 
     const check = await request(app)
-      .get('/api/users/9993')
+      .get('/api/users/99995')
       .set('Cookie', [`access_token=${token}`])
 
     expect(check.status).to.equal(404);
@@ -171,7 +185,7 @@ describe('API /api/users (Integración)', () => {
 
   it('DELETE /:id debería devolver 404 si el usuario no existe', async () => {
     const res = await request(app)
-      .delete('/api/users/9999')
+      .delete('/api/users/99999')
       .set('Cookie', [`access_token=${token}`])
 
     expect(res.status).to.equal(404);
@@ -187,7 +201,7 @@ describe('API /api/users (Integración)', () => {
     expect(res.body).to.include({
       username: 'testuser1',
       full_name: 'User One',
-      role: 'user'
+      role: 'supervisor'
     });
   });
 
