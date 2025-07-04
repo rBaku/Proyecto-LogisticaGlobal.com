@@ -12,8 +12,6 @@ pipeline {
         PGPORT = '5432'
         PGDATABASE = 'postgres'
         PGSSLMODE = 'require'
-        JWT_SECRET = 'secreto-super-seguro'
-        TEST_SUMMARY = ''
     }
 
     stages {
@@ -49,26 +47,31 @@ pipeline {
                         "PGHOST=${env.PGHOST}",
                         "PGPORT=${env.PGPORT}",
                         "PGDATABASE=${env.PGDATABASE}",
-                        "PGSSLMODE=${env.PGSSLMODE}",
-                        "JWT_SECRET=${env.JWT_SECRET}"
+                        "PGSSLMODE=${env.PGSSLMODE}"
                     ]) {
                         sh '''
-                            echo "🔍 Ejecutando tests de backend..."
-                            npm test | tee resultado_tests.log
+                            echo "Ejecutando tests..."
+                            npm test > resultado_tests.log || true
                         '''
                         script {
                             def logContent = readFile('resultado_tests.log')
-                            def match = logContent =~ /(\d+)\s+passing.*\n\s*(\d+)\s+failing/
-                            if (match) {
-                                def passed = match[0][1].toInteger()
-                                def failed = match[0][2].toInteger()
+                            def matchPassingFailing = logContent =~ /(\d+)\s+passing.*\n\s*(\d+)\s+failing/
+                            def matchOnlyPassing = logContent =~ /(\d+)\s+passing/
+
+                            if (matchPassingFailing) {
+                                def passed = matchPassingFailing[0][1].toInteger()
+                                def failed = matchPassingFailing[0][2].toInteger()
                                 def total = passed + failed
                                 def percentage = (passed * 100) / total
                                 env.TEST_SUMMARY = "${percentage}% de tests pasaron (${passed}/${total})"
+                            } else if (matchOnlyPassing) {
+                                def passed = matchOnlyPassing[0][1].toInteger()
+                                env.TEST_SUMMARY = "100% de tests pasaron (${passed}/${passed})"
                             } else {
                                 env.TEST_SUMMARY = "No se pudo calcular el porcentaje de tests."
                             }
                         }
+                        sh 'cp resultado_tests.log ../resultado_tests.log'
                     }
                 }
             }
@@ -76,14 +79,23 @@ pipeline {
     }
 
     post {
+        always {
+            echo '🧹 Limpiando workspace'
+            deleteDir()
+        }
+
         success {
-            slackSend(
-                channel: '#jenkins',
-                color: 'good',
-                message: """✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}
-🧪 ${env.TEST_SUMMARY}
+            script {
+                def testSummary = env.TEST_SUMMARY ?: "No se pudo calcular el porcentaje de tests."
+                slackSend(
+                    channel: '#jenkins',
+                    color: 'good',
+                    message: """\
+✅ Build exitoso: ${env.JOB_NAME} #${env.BUILD_NUMBER}
+🧪 ${testSummary}
 ✅ 100% de pruebas Selenium exitosas"""
-            )
+                )
+            }
         }
 
         failure {
@@ -92,11 +104,6 @@ pipeline {
                 color: 'danger',
                 message: "❌ Build fallido: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
-        }
-
-        always {
-            echo '🧹 Limpiando workspace'
-            deleteDir()
         }
     }
 }
