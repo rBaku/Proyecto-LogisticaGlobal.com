@@ -34,7 +34,7 @@ Descripción de cada vista importante del sistema, considerar que el sistema gua
 
 5. Eliminar una incidencia: De igual manera que los dos casos anteriores, en la lista de incidencias se da la opción de eliminar cada una de estas, al presionar el ícono se eliminará permanentemente del sistema.
 
-6. Historial de cambios: Los cambios generados en un incidente son trazbles. Supervisores y administradores pueden ver el historial de cambios para ver qué y cuándo cambió
+6. Historial de cambios: Los cambios generados en un incidente son trazables. Supervisores y administradores pueden ver el historial de cambios para ver qué y cuándo cambió
   
 - *Manejo de los robots*: Dentro de la empresa, una parte fundamental son los [robots](../../wiki/Robots-de-la-empresa), dentro del sistema se guardan los robots para que sean fácilmente accesibles al crear una incidencia, por lo que se tiene una página que es accesible desde la página inicial. Esta página despliega la lista de los robots guardados actualmente en el sistema. Solo un adminisrador puede agregar, editar y eliminar robots en el sistema. Sin embargo, cuando un técnico resuelve un incidente manda un estado final de ese robot, y cuando un usuario lo firma, se actualiza el estado de ese robot.
 
